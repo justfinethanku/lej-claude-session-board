@@ -46,6 +46,8 @@ This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__
 
 ## Files
 
+If `assets/` or `references/` is missing (a skills library can sync `SKILL.md` alone), clone the full skill first: `git clone https://github.com/justfinethanku/lej-claude-session-board.git ~/.claude/skills/lej-session-board`.
+
 - `assets/board-template.html`: the board page, with example data. Fill `board-data` and publish it.
 - `references/data-schema.md`: the JSON fields the page reads.
 - `references/coordination-rule.md`: the `CLAUDE.md` block that makes sessions report to the manager.
