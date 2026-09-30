@@ -5,7 +5,7 @@ A Claude Code skill for running a lot of Claude Code sessions in one project wit
 One session becomes the **manager**. Every other session in the project folder reports to it: when it starts something, when it needs you, before it touches shared code or deploys, and when it's done. The manager keeps one page current, the **LEJ Session Board**:
 
 - **A section per open session:** what it's doing, where it stands, and any question it has for you, right there in the same section.
-- **Recommended answers:** each question has two or three options with one marked Recommended. Picking one fills a reply you can edit. Copy puts the session's name and `Re: <question>` above your reply, so the manager knows where it goes and the session knows what you're answering. Paste it in the session, or paste a batch back to the manager and it relays each one.
+- **Recommended answers:** each question has two or three options with one marked Recommended. Picking one fills a reply you can edit. Copy puts the session's name and `Re: <question>` above your reply, so the manager knows where it goes and the session knows what you're answering. Paste it in the session, or paste a batch back to the manager and it relays each one. When a session has several questions, **Copy all answers** at the bottom of its section copies every reply in one block.
 - **The to-do list:** grouped by who acts. Every item Claude can build has a numbered starter prompt (`PRJ5 Short name`) to copy into a new session, title included.
 - **Per-item copy marks:** each copy button turns into "✓ Copied", so you can see which replies and prompts you've already used.
 
