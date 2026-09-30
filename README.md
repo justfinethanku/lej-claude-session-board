@@ -11,6 +11,10 @@ One session becomes the **manager**. Every other session in the project folder r
 
 It uses Claude Desktop's session tools, so it runs in the **Code tab of the Claude desktop app**.
 
+## Watch it
+
+A three-minute video of the whole loop (install, make a manager, read the board, answer, start new work), plus a step-by-step guided setup: **[limitededitionjonathan.com/session-board](https://limitededitionjonathan.com/session-board)**. The project in the video is made up; its board data is `assets/demo-data.json`.
+
 ## Install
 
 ```bash
@@ -25,6 +29,7 @@ Then in a Claude Code desktop session in your project folder, say something like
 |---|---|
 | `SKILL.md` | The instructions Claude follows: roster, hub setup, building the board, keeping it current. |
 | `assets/board-template.html` | The board page, rendered from a JSON block. Example data included. |
+| `assets/demo-data.json` | The made-up "Pantry" board from the video, with every feature filled in. |
 | `references/data-schema.md` | The JSON fields the page reads. |
 | `references/coordination-rule.md` | The `CLAUDE.md` block that makes sessions report to the manager. |
 
