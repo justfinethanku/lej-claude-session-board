@@ -1,13 +1,13 @@
 ---
 name: lej-session-board
-description: Run one Claude Code desktop session as the manager for a project's parallel sessions, and keep the user's LEJ Session Board artifact current. The board gives each open session a section with its state and the user's pending questions, each with a recommended option, an editable reply and a copy button. A to-do list follows, with numbered starter prompts for new sessions. Use when the user runs several Claude Code sessions in one project folder and asks which are stale, in progress or need follow-up, asks for a session board or status page, asks to coordinate or relay between sessions, or says "session board", "manager session" or "update the board".
+description: Run one Claude Code desktop session as the manager for a project's parallel sessions, and keep the user's LEJ Session Board current (a local HTML page by default, or an artifact). The board gives each open session a section with its state and the user's pending questions, each with a recommended option, an editable reply and a copy button. A to-do list follows, with numbered starter prompts for new sessions. Use when the user runs several Claude Code sessions in one project folder and asks which are stale, in progress or need follow-up, asks for a session board or status page, asks to coordinate or relay between sessions, or says "session board", "manager session" or "update the board".
 ---
 
 # LEJ Session Board
 
-One Claude Code desktop session becomes the **manager** for a project folder. Every other session in that folder sends it short updates. The manager relays the user's answers, flags overlaps, and keeps one artifact current: the **LEJ Session Board**. The user reads that one page and never has to open every session to find out what's going on.
+One Claude Code desktop session becomes the **manager** for a project folder. Every other session in that folder sends it short updates. The manager relays the user's answers, flags overlaps, and keeps one page current: the **LEJ Session Board**. The user reads that one page and never has to open every session to find out what's going on.
 
-This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__*`, `SendMessage`) and the `Artifact` tool.
+This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__*`, `SendMessage`). The `Artifact` tool is optional: only for a copy the user can open on their phone.
 
 ## 1. Take the roster
 
@@ -34,11 +34,12 @@ This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__
 4. **To-do list:** read the project's running to-do file (for example `docs/TODO.md`), and group the open items by who acts: the user's call, other people, Claude builds, and later. Leave out work an open session is already doing.
 5. **Starter prompts:** give each "Claude builds" item a starter prompt titled `<PREFIX><n> <short name>`. The prefix is the one the user's session names already use, like `AVS`. `<n>` is the next number no session title or earlier prompt has used, so run `list_sessions` to check. Once a number is assigned to an item it stays with that item. The title goes above the prompt, and it's copied along with it, so the user can name the new session with it. Write every prompt as a self-contained brief with `<context>`, `<instructions>` and `<output>` sections. Name the files, specs and house rules it should read. Say where the user's OK comes before new infrastructure, migrations or deploys. If the `agent-prompt-authoring` skill is installed, follow it.
 6. **Look:** use the LEJ tokens already in the template: Bricolage Grotesque for display, Hanken Grotesk for body text, JetBrains Mono for replies and prompts, terracotta `#BD4F2E` on a soft white `#FCFCFB`, charcoal `#232427` text and `#E3E3DF` hairlines. Terracotta marks only what needs the user and the primary actions. No pills, eyebrow labels or numbered sections.
-7. Publish it with `Artifact` (`title`: "LEJ Session Board", `icon`: "list"). On every update, republish the same file path so the URL stays the same.
+7. **Write it as a local page (the default).** Run `python3 scripts/build_local.py <board.html> "<project folder>/LEJ Session Board.html"` and open the output once (`open` on macOS). The script adds a doctype and a 60-second auto-reload that waits while the user is typing, so the open tab picks up every rewrite. Re-run the script after every change. A local page has no publish limit, so it never falls behind.
+8. **Artifact copy (optional):** publish with `Artifact` (`title`: "LEJ Session Board", `icon`: "list") only when the user wants to open it on another device. Artifact publishes are capped per account per day (200 on some plans, shared with every other artifact the user has, reset at UTC midnight). So publish at most every 15–20 minutes, never after every update. If a publish is refused, keep the local page current and say so right away.
 
 ## 4. Keep it current
 
-- **Updates from sessions:** when an update arrives, fold it into that session's section and republish. When a session hands over text for the user to paste elsewhere (a prompt for another machine, a message for someone), put it in that session's `pastes` so it can be copied as-is. Tell the user in two or three lines, with anything that needs them first.
+- **Updates from sessions:** when an update arrives, fold it into that session's section and rewrite the local page. When a session hands over text for the user to paste elsewhere (a prompt for another machine, a message for someone), put it in that session's `pastes` so it can be copied as-is. Tell the user in two or three lines, with anything that needs them first.
 - **The user's answers:** the user pastes one or more blocks. Each block starts with a session name, followed by one `Re:` part, or several when the user used Copy all answers. Send each block to the session it names in one `SendMessage`, keeping all its `Re:` parts together, and add "relayed from the manager session". Then take the answered questions off the board.
 - **Deploys:** a session treats a relayed yes as approval to build, not to ship. For a production deploy, the user types "go" in the session that deploys. The board's `to` line for a deploy question says so.
 - **Overlaps:** when two sessions touch the same code, tables or machines, message both. Ask them to agree directly on who changes what and who deploys first, then report what they agreed.
@@ -49,6 +50,7 @@ This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__
 
 If `assets/` or `references/` is missing (a skills library can sync `SKILL.md` alone), clone the full skill first: `git clone https://github.com/justfinethanku/lej-claude-session-board.git ~/.claude/skills/lej-session-board`.
 
-- `assets/board-template.html`: the board page, with example data. Fill `board-data` and publish it.
+- `assets/board-template.html`: the board page, with example data. Fill `board-data`, then build the local page from it.
+- `scripts/build_local.py`: turns the filled template into a standalone page with auto-reload.
 - `references/data-schema.md`: the JSON fields the page reads.
 - `references/coordination-rule.md`: the `CLAUDE.md` block that makes sessions report to the manager.
