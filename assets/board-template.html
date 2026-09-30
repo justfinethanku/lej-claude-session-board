@@ -224,7 +224,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       box.appendChild(fs); box.appendChild(ta);
       var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
       var btn = copyButton('q:' + q.id);
-      btn.addEventListener('click', function () { copyText('Re: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
+      btn.addEventListener('click', function () { copyText(s.name + '\nRe: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
       act.appendChild(btn); box.appendChild(act); sec.appendChild(box);
     });
     host.appendChild(sec);
