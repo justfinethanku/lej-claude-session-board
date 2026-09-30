@@ -33,3 +33,7 @@ Then in a Claude Code desktop session in your project folder, say something like
 LEJ branding: Bricolage Grotesque, Hanken Grotesk and JetBrains Mono. Terracotta on soft white, with charcoal text and a matching dark mode. Color marks only what needs you and the main actions.
 
 Made by Jonathan Edwards ([Limited Edition Jonathan](https://limitededitionjonathan.com)).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
