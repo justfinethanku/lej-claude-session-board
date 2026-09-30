@@ -38,7 +38,7 @@ This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__
 
 ## 4. Keep it current
 
-- **Updates from sessions:** when an update arrives, fold it into that session's section and republish. Tell the user in two or three lines, with anything that needs them first.
+- **Updates from sessions:** when an update arrives, fold it into that session's section and republish. When a session hands over text for the user to paste elsewhere (a prompt for another machine, a message for someone), put it in that session's `pastes` so it can be copied as-is. Tell the user in two or three lines, with anything that needs them first.
 - **The user's answers:** the user pastes one or more blocks, each starting with a session name and a `Re:` line. Send each block to the session it names with `SendMessage`, and add "relayed from the manager session". Then take the answered questions off the board.
 - **Deploys:** a session treats a relayed yes as approval to build, not to ship. For a production deploy, the user types "go" in the session that deploys. The board's `to` line for a deploy question says so.
 - **Overlaps:** when two sessions touch the same code, tables or machines, message both. Ask them to agree directly on who changes what and who deploys first, then report what they agreed.

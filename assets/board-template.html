@@ -227,6 +227,20 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       btn.addEventListener('click', function () { copyText(s.name + '\nRe: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
       act.appendChild(btn); box.appendChild(act); sec.appendChild(box);
     });
+    (s.pastes || []).forEach(function (pp) {
+      var box = el('div', 'q');
+      box.appendChild(el('div', 'q-title', esc(pp.title)));
+      if (pp.note) box.appendChild(el('div', 'q-note', esc(pp.note)));
+      var key = 'paste:' + pp.id;
+      var ta = el('textarea', 'prompt'); ta.id = 'paste-' + pp.id; ta.setAttribute('aria-label', pp.title);
+      var saved = load('text:' + key); ta.value = saved !== null ? saved : pp.text;
+      ta.addEventListener('input', function () { save('text:' + key, ta.value); });
+      box.appendChild(ta);
+      var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(pp.to)));
+      var btn = copyButton(key);
+      btn.addEventListener('click', function () { copyText(ta.value.trim(), btn, key); });
+      act.appendChild(btn); box.appendChild(act); sec.appendChild(box);
+    });
     host.appendChild(sec);
   });
 
