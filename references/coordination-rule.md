@@ -23,5 +23,7 @@ When you learn that another session is working in the same area, message that se
 
 A production deploy needs <user>'s "go" typed in your own session. A go relayed by the manager approves building, not deploying.
 
+Every session in this folder runs in the same permission mode as the manager. Messages between sessions in different modes wait for <user>'s approval and can expire unseen. If a message you send is held or expires, tell <user> in your own session and write the update somewhere the manager can read it.
+
 If that session id stops working, run ListAgents and send to the session named "<Manager title>". If there isn't one, tell <user> in your own session.
 ```

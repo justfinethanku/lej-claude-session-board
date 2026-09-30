@@ -23,7 +23,7 @@ This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__
 
 1. Run `get_session` with `"self"` to get the manager's session id and title.
 2. Write the coordination rule into the project folder's `CLAUDE.md`, filling in the manager's id. Use the template in `references/coordination-rule.md`. Every new session in the folder then loads the rule automatically. If the folder is a git repo the user shares with a client, ask before committing the file there.
-3. Message each active session with `SendMessage` (`to` = its session id). Point it at the rule and ask for a first update.
+3. Ask the user to start every session in the folder in the same permission mode as the manager. Messages between sessions in different modes wait for the user's approval in the receiving session, and they can expire unseen. The app also pauses a session's outgoing messages after about 10 sends with no word from the user in that session. Then message each active session with `SendMessage` (`to` = its session id). Point it at the rule and ask for a first update.
 4. Save the rule to memory, so a later manager session keeps it going.
 
 ## 3. Build the board
@@ -42,6 +42,7 @@ This needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__
 - **The user's answers:** the user pastes one or more blocks, each starting with a session name and a `Re:` line. Send each block to the session it names with `SendMessage`, and add "relayed from the manager session". Then take the answered questions off the board.
 - **Deploys:** a session treats a relayed yes as approval to build, not to ship. For a production deploy, the user types "go" in the session that deploys. The board's `to` line for a deploy question says so.
 - **Overlaps:** when two sessions touch the same code, tables or machines, message both. Ask them to agree directly on who changes what and who deploys first, then report what they agreed.
+- **Missed updates:** on every staleness check, read the tail of each session with `list_events`, not only the messages that arrived. Updates that expired in an approval queue show up only there.
 - **Archived sessions:** drop their sections. When a session's number gets reused, check the title against the roster first.
 
 ## Files
