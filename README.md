@@ -7,6 +7,7 @@ One session becomes the **manager**. Every other session in the project folder r
 - **A section per open session:** what it's doing, where it stands, and any question it has for you, right there in the same section.
 - **Recommended answers:** each question has two or three options with one marked Recommended. Picking one fills a reply you can edit. Copy puts the session's name and `Re: <question>` above your reply, so the manager knows where it goes and the session knows what you're answering. Paste it in the session, or paste a batch back to the manager and it relays each one. When a session has several questions, **Copy all answers** at the bottom of its section copies every reply in one block.
 - **The to-do list:** grouped by who acts. Every item Claude can build has a numbered starter prompt (`PRJ5 Short name`) to copy into a new session, title included.
+- **Question counts up top:** the header says how many questions need you across how many sessions, and each section opens with its own count, so you see them all before you answer the first.
 - **Per-item copy marks:** each copy button turns into "✓ Copied", so you can see which replies and prompts you've already used.
 
 It uses Claude Desktop's session tools, so it runs in the **Code tab of the Claude desktop app**.
