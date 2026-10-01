@@ -38,6 +38,18 @@ code { font-family: var(--font-mono); font-size: 13px; }
 .state.done { color: var(--ok); }
 .where { margin: 0; padding-left: 18px; display: grid; gap: 5px; max-width: 72ch; }
 
+.overview { display: grid; gap: 10px; max-width: 72ch; font-size: 16.5px; }
+.overview p { margin: 0; }
+details.session { display: block; padding: 0; margin: 0; }
+details.session > summary { list-style: none; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 4px; padding: 18px 22px; cursor: pointer; color: var(--fg); width: auto; font: inherit; }
+details.session > summary::-webkit-details-marker { display: none; }
+details.session > summary::before { content: "\25B8"; color: var(--muted); grid-row: 1 / span 2; font-size: 15px; line-height: 1.9; }
+details.session[open] > summary::before { content: "\25BE"; }
+details.session > summary h2, details.session > summary .need { grid-column: 2; }
+.need { font-size: 15px; font-weight: 600; color: var(--muted); }
+.need.ask { color: var(--accent); }
+.session-body { display: grid; gap: 16px; padding: 0 22px 22px; min-width: 0; }
+
 .q { display: grid; gap: 10px; min-width: 0; padding-top: 16px; border-top: 1px solid var(--rule); }
 .q-title { font: 600 17px/1.35 var(--font-display); }
 .q-note { color: var(--muted); font-size: 14.5px; max-width: 72ch; }
@@ -60,6 +72,13 @@ textarea:focus-visible, button:focus-visible, .opts input:focus-visible, summary
 .todo-intro { color: var(--muted); font-size: 14.5px; margin: -20px 0 0; max-width: 72ch; }
 .group { display: grid; gap: 10px; }
 .group h3 { font: 600 19px/1.3 var(--font-display); margin: 0; }
+details.group { display: block; margin: 0; }
+details.group > summary.group-head { list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; color: var(--fg); width: auto; font: inherit; padding: 6px 0; }
+details.group > summary.group-head::-webkit-details-marker { display: none; }
+details.group > summary.group-head::before { content: "\25B8"; color: var(--muted); font-size: 15px; }
+details.group[open] > summary.group-head::before { content: "\25BE"; }
+.group-count { color: var(--muted); font-size: 14.5px; }
+details.group[open] > .items { margin-top: 10px; }
 .items { list-style: none; margin: 0; padding: 0; display: grid; }
 .items > li { padding: 10px 0; border-bottom: 1px solid var(--rule); max-width: 80ch; }
 .items > li:first-child { border-top: 1px solid var(--rule); }
@@ -77,6 +96,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     <div class="qtotal" id="qtotal" hidden></div>
     <div class="stamp" id="stamp"></div>
   </header>
+  <section class="overview" id="overview" aria-label="Overview"></section>
   <div id="sessions" style="display:grid;gap:24px"></div>
   <section class="todo" aria-labelledby="t-head">
     <h2 id="t-head">To-do list</h2>
@@ -88,6 +108,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
 <script type="application/json" id="board-data">
 {
   "updated": "Monday, Oct 5, 2026, 4:30 pm ET",
+  "overview": "Right now: PRJ4 is ready to deploy and waiting on your go, and PRJ2 needs one decision before it can build. PRJ3 is testing on its own.\n\nAlready done: PRJ1 shipped the new sign-up flow this morning, and two finished sessions are archived.",
   "projectFolder": "~/code/my-project",
   "manager": "Project Manager",
   "todoIntro": "Open items from docs/TODO.md on main. Work an open session is already doing is in its section above. Items a session can build have a starter prompt: open it, edit if you like, copy, and paste it into a new Claude Code session in the project folder. Name the session with the title.",
@@ -138,7 +159,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       "title": "Your call",
       "items": [
         {
-          "text": "<b>Pick the email provider</b> for transactional mail."
+          "text": "<b>Pick the email provider<\/b> for transactional mail."
         }
       ]
     },
@@ -146,14 +167,14 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       "title": "Claude builds",
       "items": [
         {
-          "text": "<b>Search filters</b> on the orders page.",
+          "text": "<b>Search filters<\/b> on the orders page.",
           "starter": {
             "title": "PRJ3 Orders search filters",
-            "prompt": "<context>\nThe orders page (app/orders) has a search box and no filters. Users asked for date range, status and customer filters. House rules are in the repo CLAUDE.md.\n</context>\n\n<instructions>\n1. Mock the filters and show the user.\n2. Build after their OK, in your own worktree.\n3. Deploy once they say go.\n</instructions>\n\n<output>\nThe mockup first, then the shipped page with a screenshot.\n</output>"
+            "prompt": "<context>\nThe orders page (app/orders) has a search box and no filters. Users asked for date range, status and customer filters. House rules are in the repo CLAUDE.md.\n<\/context>\n\n<instructions>\n1. Mock the filters and show the user.\n2. Build after their OK, in your own worktree.\n3. Deploy once they say go.\n<\/instructions>\n\n<output>\nThe mockup first, then the shipped page with a screenshot.\n<\/output>"
           }
         },
         {
-          "text": "<b>Nightly backup check.</b>"
+          "text": "<b>Nightly backup check.<\/b>"
         }
       ]
     },
@@ -205,41 +226,79 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   document.getElementById('stamp').textContent = 'Updated ' + data.updated + ' · kept by the ' + data.manager + ' session';
   document.getElementById('todo-intro').textContent = data.todoIntro;
 
+  // One question: its options (the recommended one picked by default), a "Write your own answer" option, an editable
+  // reply and Copy. Copy puts the header line (the session's name, or the manager's for to-do questions), then
+  // "Re: <title>", then the reply.
+  function questionBlock(q, header) {
+    var box = el('div', 'q');
+    box.appendChild(el('div', 'q-title', esc(q.title)));
+    if (q.note) box.appendChild(el('div', 'q-note', esc(q.note)));
+    var fs = el('fieldset', 'opts');
+    var ta = el('textarea'); ta.setAttribute('aria-label', 'Reply to: ' + q.title); ta.id = 'reply-' + q.id;
+    var opts = q.options.concat([{ label: 'Write your own answer', text: '', own: true }]);
+    var radios = [];
+    opts.forEach(function (o, i) {
+      var lab = el('label'); var r = el('input'); r.type = 'radio'; r.name = 'opt-' + q.id; r.id = 'opt-' + q.id + '-' + i;
+      lab.appendChild(r);
+      lab.appendChild(el('span', null, esc(o.label) + (o.rec ? '<span class="rec">Recommended</span>' : '')));
+      r.addEventListener('change', function () {
+        ta.value = o.own ? (load('own:' + q.id) || '') : o.text;
+        ta.placeholder = o.own ? 'Write your own answer' : '';
+        save('pick:' + q.id, String(i)); save('text:' + q.id, ta.value);
+        if (o.own) ta.focus();
+      });
+      radios.push(r); fs.appendChild(lab);
+    });
+    var pick = load('pick:' + q.id); var idx = pick !== null && opts[+pick] ? +pick : Math.max(0, q.options.findIndex(function (o) { return o.rec; }));
+    radios[idx].checked = true;
+    if (opts[idx].own) ta.placeholder = 'Write your own answer';
+    var savedText = load('text:' + q.id); ta.value = savedText !== null ? savedText : opts[idx].text;
+    ta.addEventListener('input', function () {
+      save('text:' + q.id, ta.value);
+      if (radios[radios.length - 1].checked) save('own:' + q.id, ta.value);
+    });
+    box.appendChild(fs); box.appendChild(ta);
+    var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
+    var btn = copyButton('q:' + q.id);
+    btn.addEventListener('click', function () { copyText(header + '\nRe: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
+    act.appendChild(btn); box.appendChild(act);
+    return { box: box, q: q, ta: ta, btn: btn };
+  }
+
+  // The manager's overview: one or two short paragraphs on what's happening now and what already happened.
+  var ov = document.getElementById('overview');
+  String(data.overview || '').split(/\n\s*\n/).forEach(function (p) { if (p.trim()) ov.appendChild(el('p', null, esc(p.trim()))); });
+  if (!ov.children.length) ov.hidden = true;
+
+  // Urgent sessions first, then sessions with questions, then the rest. Each starts collapsed to its title and what's
+  // needed from the user, and remembers being opened, so the local page's auto-reload doesn't close it.
+  function rank(s) { return s.urgent ? 0 : ((s.questions || []).length || (s.pastes || []).length || s.tone === 'needs') ? 1 : 2; }
   var host = document.getElementById('sessions');
-  data.sessions.forEach(function (s) {
-    var sec = el('section', 'session'); sec.setAttribute('aria-label', s.name);
-    sec.appendChild(el('h2', null, esc(s.name)));
+  data.sessions
+    .filter(function (s) { return !s.isManager || (s.questions || []).length || (s.pastes || []).length; })
+    .map(function (s, i) { return { s: s, i: i }; })
+    .sort(function (a, b) { return rank(a.s) - rank(b.s) || a.i - b.i; })
+    .forEach(function (x) {
+    var s = x.s;
+    var sec = el('details', 'session'); sec.id = 's-' + s.id;
+    if (load('open:' + s.id) === '1') sec.open = true;
+    sec.addEventListener('toggle', function () { save('open:' + s.id, sec.open ? '1' : '0'); });
+    var sum = el('summary');
+    sum.appendChild(el('h2', null, esc(s.name)));
+    var nqs = (s.questions || []).length;
+    var need = s.need || (nqs ? nQ(nqs) : 'Nothing needed from you');
+    sum.appendChild(el('div', 'need' + (s.urgent || nqs || (s.pastes || []).length || s.tone === 'needs' ? ' ask' : ''), (s.urgent ? 'Urgent: ' : '') + esc(need)));
+    sec.appendChild(sum);
+    var body = el('div', 'session-body');
     var nq = (s.questions || []).length;
-    if (nq) sec.appendChild(el('div', 'qcount', nQ(nq) + ' in this section' + (nq > 1 ? ' (answer all ' + nq + ', or use Copy all answers at the bottom)' : '')));
-    sec.appendChild(el('div', 'state' + (s.tone ? ' ' + s.tone : ''), esc(s.state)));
+    if (nq) body.appendChild(el('div', 'qcount', nQ(nq) + ' in this section' + (nq > 1 ? ' (answer all ' + nq + ', or use Copy all answers at the bottom)' : '')));
+    body.appendChild(el('div', 'state' + (s.tone ? ' ' + s.tone : ''), esc(s.state)));
     if (s.where && s.where.length) {
-      var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, esc(w))); }); sec.appendChild(ul);
+      var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, esc(w))); }); body.appendChild(ul);
     }
     var answers = [];
     (s.questions || []).forEach(function (q) {
-      var box = el('div', 'q');
-      box.appendChild(el('div', 'q-title', esc(q.title)));
-      if (q.note) box.appendChild(el('div', 'q-note', esc(q.note)));
-      var fs = el('fieldset', 'opts');
-      var ta = el('textarea'); ta.setAttribute('aria-label', 'Reply to: ' + q.title); ta.id = 'reply-' + q.id;
-      var radios = [];
-      q.options.forEach(function (o, i) {
-        var lab = el('label'); var r = el('input'); r.type = 'radio'; r.name = 'opt-' + q.id; r.id = 'opt-' + q.id + '-' + i;
-        lab.appendChild(r);
-        lab.appendChild(el('span', null, esc(o.label) + (o.rec ? '<span class="rec">Recommended</span>' : '')));
-        r.addEventListener('change', function () { ta.value = o.text; save('pick:' + q.id, String(i)); save('text:' + q.id, ta.value); });
-        radios.push(r); fs.appendChild(lab);
-      });
-      var pick = load('pick:' + q.id); var idx = pick !== null && q.options[+pick] ? +pick : Math.max(0, q.options.findIndex(function (o) { return o.rec; }));
-      radios[idx].checked = true;
-      var savedText = load('text:' + q.id); ta.value = savedText !== null ? savedText : q.options[idx].text;
-      ta.addEventListener('input', function () { save('text:' + q.id, ta.value); });
-      box.appendChild(fs); box.appendChild(ta);
-      var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
-      var btn = copyButton('q:' + q.id);
-      btn.addEventListener('click', function () { copyText(s.name + '\nRe: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
-      answers.push({ q: q, ta: ta, btn: btn });
-      act.appendChild(btn); box.appendChild(act); sec.appendChild(box);
+      var a = questionBlock(q, s.name); answers.push(a); body.appendChild(a.box);
     });
     if (answers.length > 1) {
       // One paste answers every question in the section: the session name once, then a Re: part per question.
@@ -253,7 +312,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
           answers.forEach(function (a) { a.btn.textContent = '✓ Copied'; a.btn.classList.add('was'); save('copied:q:' + a.q.id, '1'); });
         });
       });
-      allAct.appendChild(allBtn); sec.appendChild(allAct);
+      allAct.appendChild(allBtn); body.appendChild(allAct);
     }
     (s.pastes || []).forEach(function (pp) {
       var box = el('div', 'q');
@@ -267,17 +326,26 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(pp.to)));
       var btn = copyButton(key);
       btn.addEventListener('click', function () { copyText(ta.value.trim(), btn, key); });
-      act.appendChild(btn); box.appendChild(act); sec.appendChild(box);
+      act.appendChild(btn); box.appendChild(act); body.appendChild(box);
     });
+    sec.appendChild(body);
     host.appendChild(sec);
   });
 
   var gh = document.getElementById('groups');
   data.groups.forEach(function (g) {
-    var grp = el('div', 'group'); grp.appendChild(el('h3', null, esc(g.title)));
+    // Each group starts collapsed to its title and item count, and remembers being opened.
+    var gkey = 'open:group:' + g.title;
+    var grp = el('details', 'group'); if (load(gkey) === '1') grp.open = true;
+    grp.addEventListener('toggle', function () { save(gkey, grp.open ? '1' : '0'); });
+    var gsum = el('summary', 'group-head'); gsum.appendChild(el('h3', null, esc(g.title)));
+    var nStart = g.items.filter(function (it) { return it.starter; }).length;
+    gsum.appendChild(el('span', 'group-count', g.items.length + (g.items.length === 1 ? ' item' : ' items') + (nStart ? ' · ' + nStart + (nStart === 1 ? ' starter prompt' : ' starter prompts') : '')));
+    grp.appendChild(gsum);
     var ul = el('ul', 'items');
     g.items.forEach(function (it) {
       var li = el('li', null, it.text);
+      if (it.question) li.appendChild(questionBlock(it.question, data.manager).box);
       if (it.starter) {
         var st = it.starter; var key = 'starter:' + st.title.split(' ')[0];
         var det = el('details'); var sum = el('summary', null, esc(st.title));
