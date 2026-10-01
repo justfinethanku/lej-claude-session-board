@@ -50,6 +50,8 @@ textarea:focus-visible, button:focus-visible, .opts input:focus-visible, summary
 .to { font-size: 13.5px; color: var(--muted); }
 .copy { font: 600 14px var(--font-body); color: var(--accent-fg); background: var(--accent); border: 0; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
 .copy.was { background: transparent; color: var(--ok); box-shadow: inset 0 0 0 1px var(--rule); }
+.copy-all { padding-top: 16px; border-top: 1px solid var(--rule); }
+.copy-all .to { font-weight: 600; color: var(--fg); }
 
 .todo { display: grid; gap: 32px; }
 .todo > h2 { font: 700 26px/1.2 var(--font-display); letter-spacing: -0.01em; margin: 0; }
@@ -203,6 +205,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     if (s.where && s.where.length) {
       var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, esc(w))); }); sec.appendChild(ul);
     }
+    var answers = [];
     (s.questions || []).forEach(function (q) {
       var box = el('div', 'q');
       box.appendChild(el('div', 'q-title', esc(q.title)));
@@ -225,8 +228,23 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
       var btn = copyButton('q:' + q.id);
       btn.addEventListener('click', function () { copyText(s.name + '\nRe: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
+      answers.push({ q: q, ta: ta, btn: btn });
       act.appendChild(btn); box.appendChild(act); sec.appendChild(box);
     });
+    if (answers.length > 1) {
+      // One paste answers every question in the section: the session name once, then a Re: part per question.
+      var allKey = 'all:' + answers.map(function (a) { return a.q.id; }).join('+');
+      var allAct = el('div', 'actions copy-all');
+      allAct.appendChild(el('span', 'to', 'All ' + answers.length + ' answers in one paste'));
+      var allBtn = copyButton(allKey); allBtn.textContent = allBtn.classList.contains('was') ? '✓ Copied' : 'Copy all answers';
+      allBtn.addEventListener('click', function () {
+        var text = s.name + '\n\n' + answers.map(function (a) { return 'Re: ' + a.q.title + '\n' + a.ta.value.trim(); }).join('\n\n');
+        copyText(text, allBtn, allKey, function () {
+          answers.forEach(function (a) { a.btn.textContent = '✓ Copied'; a.btn.classList.add('was'); save('copied:q:' + a.q.id, '1'); });
+        });
+      });
+      allAct.appendChild(allBtn); sec.appendChild(allAct);
+    }
     (s.pastes || []).forEach(function (pp) {
       var box = el('div', 'q');
       box.appendChild(el('div', 'q-title', esc(pp.title)));

@@ -31,7 +31,7 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 |---|---|
 | `id` | Unique and stable. The page keys the user's pick, edits and copied state on it. Change it when the question changes. |
 | `to` | Where the reply gets pasted, such as `"PRJ2"` or `"PRJ2 (type the go there yourself)"`. |
-| `title` | The question. Copy puts the session's `name`, then `Re: <title>`, then the reply. |
+| `title` | The question. Copy puts the session's `name`, then `Re: <title>`, then the reply. When a session has two or more questions, a **Copy all answers** button under the last one copies the `name` once, then `Re: <title>` and the reply for each question, separated by blank lines. |
 | `note` | Optional context. Keep it under three lines. |
 | `options` | Two or three `{ "label", "text", "rec" }`. `label` is what the user reads, `text` is the full reply the session gets, and `rec: true` marks the recommended option, which is selected by default. |
 
