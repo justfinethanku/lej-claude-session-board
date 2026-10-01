@@ -22,7 +22,7 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 | `state` | One line: what it's doing, or what it needs. |
 | `tone` | `"needs"` (terracotta, waiting on the user), `"done"` (green), or `""`. |
 | `where` | Two to four plain lines on where it stands. Plain text, escaped on render. |
-| `questions` | Zero or more `Question`s. |
+| `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count under each section's title. |
 | `pastes` | Optional. Ready-made text the user pastes somewhere else, such as a prompt for another machine: `{ "id", "title", "to", "note"?, "text" }`. It shows as an editable block, and Copy puts the text alone, with no header. |
 
 ## Question
