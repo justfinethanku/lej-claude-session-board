@@ -7,6 +7,7 @@ The board page renders from the JSON in `<script type="application/json" id="boa
   "updated": "Monday, Oct 5, 2026, 4:30 pm ET",
   "projectFolder": "~/code/my-project",
   "manager": "Project Manager",
+  "overview": "One or two short paragraphs, split by a blank line: what's happening now, then what already happened.",
   "todoIntro": "One or two sentences above the to-do list.",
   "sessions": [ Session, ... ],
   "groups": [ Group, ... ]
@@ -19,11 +20,16 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 |---|---|
 | `id` | Short stable id, such as `prj2`. |
 | `name` | The session's title, exactly as it appears in the sidebar. |
-| `state` | One line: what it's doing, or what it needs. |
+| `need` | The subtitle the collapsed section shows: what the session needs from the user, in a few words ("Your go typed in PRJ4"). Leave it out and the page says how many questions need the user, or "Nothing needed from you". |
+| `urgent` | Optional `true`. Puts the section first and prefixes the subtitle with "Urgent:". Use it for what blocks other work or what the user is waiting on today. |
+| `isManager` | Optional `true` on the manager's own entry. The `overview` replaces its where-it-stands lines, so the page shows the entry only when it holds questions or pastes. |
+| `state` | One line inside the section: what it's doing, or what it needs. |
 | `tone` | `"needs"` (terracotta, waiting on the user), `"done"` (green), or `""`. |
 | `where` | Two to four plain lines on where it stands. Plain text, escaped on render. |
 | `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count under each section's title. |
 | `pastes` | Optional. Ready-made text the user pastes somewhere else, such as a prompt for another machine: `{ "id", "title", "to", "note"?, "text" }`. It shows as an editable block, and Copy puts the text alone, with no header. |
+
+Sections start collapsed to the title and `need` line, and open on click. The page orders them: `urgent` first, then sessions with questions, pastes or `tone: "needs"`, then the rest, keeping the data's order within each group. A section the viewer opens stays open across reloads.
 
 ## Question
 
@@ -33,14 +39,16 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 | `to` | Where the reply gets pasted, such as `"PRJ2"` or `"PRJ2 (type the go there yourself)"`. |
 | `title` | The question. Copy puts the session's `name`, then `Re: <title>`, then the reply. When a session has two or more questions, a **Copy all answers** button under the last one copies the `name` once, then `Re: <title>` and the reply for each question, separated by blank lines. |
 | `note` | Optional context. Keep it under three lines. |
-| `options` | Two or three `{ "label", "text", "rec" }`. `label` is what the user reads, `text` is the full reply the session gets, and `rec: true` marks the recommended option, which is selected by default. |
+| `options` | Two or three `{ "label", "text", "rec" }`. `label` is what the user reads, `text` is the full reply the session gets, and `rec: true` marks the recommended option, which is selected by default. The page adds a last option, **Write your own answer**, which empties the reply box for the user's own words and keeps them. |
 
 ## Group
 
 | Field | Meaning |
 |---|---|
 | `title` | For example "Your call", "Other people", "Claude builds", "Later". |
-| `items` | `{ "text", "starter"? }`. `text` may hold `<b>` and `<code>` and is trusted HTML, so write it yourself. |
+| `items` | `{ "text", "question"?, "starter"? }`. `text` may hold `<b>` and `<code>` and is trusted HTML, so write it yourself. Give every item in the user's-call group a `question` (same shape as above, `to` the manager): the page renders it under the item with options, Write your own answer and Copy, and Copy's first line is the manager's name. |
+
+Each group starts collapsed to its title and item count (plus how many starter prompts it holds), and remembers being opened.
 
 `starter` is `{ "title": "PRJ5 Short name", "prompt": "<context>…</context>\n\n<instructions>…</instructions>\n\n<output>…</output>" }`. The page shows the title above an editable prompt. Copy puts the title, a blank line, then the prompt.
 
