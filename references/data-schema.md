@@ -1,10 +1,10 @@
 # Board data schema
 
-The board page renders from the JSON in `<script type="application/json" id="board-data">`. Edit this block and republish; the markup doesn't change.
+The board page renders from the JSON in `<script type="application/json" id="board-data">`. Edit this block and rebuild the local page; the markup doesn't change.
 
 ```json
 {
-  "updated": "Monday, Oct 5, 2026, 4:30 pm ET",
+  "updated": "Monday, Oct 5, 2026, 4:30 pm ET (from `date`, never estimated)",
   "projectFolder": "~/code/my-project",
   "manager": "Project Manager",
   "overview": "One or two short paragraphs, split by a blank line: what's happening now, then what already happened.",
@@ -19,14 +19,14 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 | Field | Meaning |
 |---|---|
 | `id` | Short stable id, such as `prj2`. |
-| `name` | The session's title, exactly as it appears in the sidebar. |
+| `name` | The session's title, exactly as it appears in the sidebar (`<PREFIX><n> <short name>`). Copy headers use it, so update it whenever a session is renamed. |
 | `need` | The subtitle the collapsed section shows: what the session needs from the user, in a few words ("Your go typed in PRJ4"). Leave it out and the page says how many questions need the user, or "Nothing needed from you". |
 | `urgent` | Optional `true`. Puts the section first and prefixes the subtitle with "Urgent:". Use it for what blocks other work or what the user is waiting on today. |
 | `isManager` | Optional `true` on the manager's own entry. The `overview` replaces its where-it-stands lines, so the page shows the entry only when it holds questions or pastes. |
 | `state` | One line inside the section: what it's doing, or what it needs. |
 | `tone` | `"needs"` (terracotta, waiting on the user), `"done"` (green), or `""`. |
 | `where` | Two to four plain lines on where it stands. Plain text, escaped on render. |
-| `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count under each section's title. |
+| `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count at the top of each open section. |
 | `pastes` | Optional. Ready-made text the user pastes somewhere else, such as a prompt for another machine: `{ "id", "title", "to", "note"?, "text" }`. It shows as an editable block, and Copy puts the text alone, with no header. |
 
 Sections start collapsed to the title and `need` line, and open on click. The page orders them: `urgent` first, then sessions with questions, pastes or `tone: "needs"`, then the rest, keeping the data's order within each group. A section the viewer opens stays open across reloads.
@@ -54,4 +54,4 @@ Each group starts collapsed to its title and item count (plus how many starter p
 
 ## What the viewer's browser keeps
 
-The option picks, edited replies, edited prompts and "✓ Copied" marks stay in the viewer's browser (localStorage, keyed by id), so a republish doesn't wipe them. Give a question a new `id` when its wording changes, so an old edit doesn't stick to it.
+The option picks, edited replies, edited prompts and "✓ Copied" marks stay in the viewer's browser (localStorage, keyed by id), so a rebuild doesn't wipe them. Open sections and groups are remembered the same way. Give a question a new `id` when its wording changes, so an old edit doesn't stick to it.
