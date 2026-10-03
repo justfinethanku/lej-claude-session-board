@@ -39,6 +39,14 @@ code { font-family: var(--font-mono); font-size: 13px; }
 .state.done { color: var(--ok); }
 .where { margin: 0; padding-left: 18px; display: grid; gap: 5px; max-width: 72ch; }
 .reminders { display: grid; gap: 6px; max-width: 72ch; }
+.action { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid var(--accent); border-radius: 8px; max-width: 72ch; }
+.action h3 { margin: 0; font: 600 16px var(--font-body); }
+.action ol { margin: 0; padding-left: 20px; display: grid; gap: 5px; }
+.action pre { margin: 0; padding: 10px 12px; background: var(--field); border: 1px solid var(--rule); border-radius: 6px; font: 13px var(--font-mono); white-space: pre-wrap; word-break: break-word; }
+.action a { color: var(--accent); }
+.backlog { max-width: 72ch; }
+.backlog summary { cursor: pointer; font-weight: 600; }
+.backlog ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 5px; }
 .reminders h3 { margin: 0; font: 600 15px var(--font-body); }
 .reminders ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
 .reminders .when { color: var(--muted); }
@@ -294,10 +302,10 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
 
   // Urgent sessions first, then sessions with questions, then the rest. Each starts collapsed to its title and what's
   // needed from the user, and remembers being opened, so the local page's auto-reload doesn't close it.
-  function rank(s) { return s.urgent ? 0 : ((s.questions || []).length || (s.pastes || []).length || s.tone === 'needs') ? 1 : 2; }
+  function rank(s) { return s.urgent ? 0 : ((s.questions || []).length || (s.pastes || []).length || (s.actions || []).length || s.tone === 'needs') ? 1 : 2; }
   var host = document.getElementById('sessions');
   data.sessions
-    .filter(function (s) { return !s.isManager || (s.questions || []).length || (s.pastes || []).length || (s.reminders || []).length; })
+    .filter(function (s) { return !s.isManager || (s.questions || []).length || (s.pastes || []).length || (s.reminders || []).length || (s.actions || []).length; })
     .map(function (s, i) { return { s: s, i: i }; })
     .sort(function (a, b) { return rank(a.s) - rank(b.s) || a.i - b.i; })
     .forEach(function (x) {
@@ -309,7 +317,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     sum.appendChild(el('h2', null, esc(s.name)));
     var nqs = (s.questions || []).length;
     var need = s.need || (nqs ? nQ(nqs) : 'Nothing needed from you');
-    sum.appendChild(el('div', 'need' + (s.urgent || nqs || (s.pastes || []).length || s.tone === 'needs' ? ' ask' : ''), (s.urgent ? 'Urgent: ' : '') + esc(need)));
+    sum.appendChild(el('div', 'need' + (s.urgent || nqs || (s.pastes || []).length || (s.actions || []).length || s.tone === 'needs' ? ' ask' : ''), (s.urgent ? 'Urgent: ' : '') + esc(need)));
     sec.appendChild(sum);
     var body = el('div', 'session-body');
     var nq = (s.questions || []).length;
@@ -317,6 +325,28 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     body.appendChild(el('div', 'state' + (s.tone ? ' ' + s.tone : ''), esc(s.state)));
     if (s.where && s.where.length) {
       var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, esc(w))); }); body.appendChild(ul);
+    }
+    // Actions: things only the user can do (a key, a click, a setting). Everything needed to do it sits here:
+    // the link, the steps, any text to paste, and a Copy that tells the manager it's done.
+    (s.actions || []).forEach(function (a) {
+      var box = el('div', 'action'); box.appendChild(el('h3', null, esc(a.title)));
+      if (a.why) box.appendChild(el('div', 'q-note', esc(a.why)));
+      if (a.link) box.appendChild(el('div', null, '<a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.linkText || a.link) + '</a>'));
+      if ((a.steps || []).length) { var ol = el('ol'); a.steps.forEach(function (st) { ol.appendChild(el('li', null, esc(st))); }); box.appendChild(ol); }
+      if (a.text) {
+        box.appendChild(el('pre', null, esc(a.text)));
+        var ca = el('div', 'actions'); ca.appendChild(el('span', 'to', esc(a.textTo || 'Copy this')));
+        var cb = copyButton('act-text:' + a.id); cb.addEventListener('click', function () { copyText(a.text, cb, 'act-text:' + a.id); }); ca.appendChild(cb); box.appendChild(ca);
+      }
+      var da = el('div', 'actions'); da.appendChild(el('span', 'to', 'When it\'s done, paste into ' + esc(data.manager)));
+      var db = copyButton('act-done:' + a.id); db.textContent = db.classList.contains('was') ? '✓ Copied' : 'Copy "done"';
+      db.addEventListener('click', function () { copyText(data.manager + '\nDone: ' + a.title, db, 'act-done:' + a.id); }); da.appendChild(db); box.appendChild(da);
+      body.appendChild(box);
+    });
+    // Backlog: this workstream's open to-do items, kept in its own section so nothing about it lives elsewhere.
+    if ((s.backlog || []).length) {
+      var bl = el('details', 'backlog'); bl.appendChild(el('summary', null, 'Backlog (' + s.backlog.length + ')'));
+      var bu = el('ul'); s.backlog.forEach(function (b) { bu.appendChild(el('li', null, b)); }); bl.appendChild(bu); body.appendChild(bl);
     }
     // Reminders: things the user asked to be reminded of. Not questions, so no options and no copy.
     if ((s.reminders || []).length) {
