@@ -33,6 +33,8 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 | `tone` | `"needs"` (terracotta, waiting on the user), `"done"` (green), or `""`. |
 | `where` | Two to four plain lines on where it stands. Plain text, escaped on render. |
 | `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count at the top of each open section. |
+| `actions` | Optional. Steps only the user can do (a key, a setting, a click, SQL): `[{ "id", "title", "why"?, "link"?, "linkText"?, "steps": [..], "text"?, "textTo"? }]`. Each renders inside the section with its link, numbered steps, any text to copy, and a **Copy "done"** for the manager. Put everything needed to do it here, so the user never goes to another section. |
+| `backlog` | Optional. The workstream's open to-do items (trusted HTML strings), shown as a collapsed "Backlog (n)" list in the section. Use it in place of a separate to-do group per workstream. |
 | `reminders` | Optional. Things the user asked to be reminded of: `[{ "text", "when"? }]`. They render as a Reminders list inside the section, with no options and no Copy, because a reminder isn't a question. The manager's entry shows when it holds reminders, even with no questions. |
 | `pastes` | Optional. Ready-made text the user pastes somewhere else, such as a prompt for another machine: `{ "id", "title", "to", "note"?, "text" }`. It shows as an editable block, and Copy puts the text alone, with no header. |
 
