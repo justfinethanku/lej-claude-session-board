@@ -9,6 +9,7 @@ One session becomes the **manager**. Every other session in the project folder r
 - **Recommended answers:** each question has two or three options, one marked Recommended, plus **Write your own answer**. Copy puts the session's name and `Re: <question>` above your reply, so the manager knows where it goes. Paste it in the session, or paste a batch back to the manager and it relays each one. **Copy all answers** answers a whole session in one paste.
 - **The to-do list:** collapsible groups by who acts. Your-call items come with recommended answers too. Every item Claude can build has a numbered starter prompt (`PRJ5 Short name`) to copy into a new session, title included.
 - **Question counts and copy marks:** the header says how many questions need you, and each Copy button turns into "✓ Copied" once used.
+- **It stays current on its own:** every answer you copy for a session ends with a line asking it to tell the manager once it's acted. The manager also sweeps every session every 15 minutes, and if nobody has checked in 30 minutes the board says "Out of date" in red.
 
 The manager also runs the deploy queue (one deploy at a time), hands out migration numbers, keeps session titles in the `PRJ5 Short name` pattern, and catches overlaps between sessions.
 
@@ -38,6 +39,7 @@ Then in a Claude Code desktop session in your project folder, say something like
 | `assets/demo-data.json` | The made-up "Pantry" board from the video, with every feature filled in. |
 | `references/data-schema.md` | The JSON fields the page reads. |
 | `references/coordination-rule.md` | The `CLAUDE.md` block that makes sessions report to the manager. |
+| `references/sweep.md` | The 15-minute sweep the manager schedules to keep the board true. |
 
 ## Look
 

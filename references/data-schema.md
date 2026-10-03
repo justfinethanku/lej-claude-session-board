@@ -5,6 +5,8 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 ```json
 {
   "updated": "Monday, Oct 5, 2026, 4:30 pm ET (from `date`, never estimated)",
+  "updatedISO": "2026-10-05T20:30:00Z (from `date -u +%Y-%m-%dT%H:%M:%SZ`; set on every rebuild)",
+  "reportBack": "Optional. The line added to every answer copied for a session. Leave it out for the default.",
   "projectFolder": "~/code/my-project",
   "manager": "Project Manager",
   "overview": "One or two short paragraphs, split by a blank line: what's happening now, then what already happened.",
@@ -13,6 +15,10 @@ The board page renders from the JSON in `<script type="application/json" id="boa
   "groups": [ Group, ... ]
 }
 ```
+
+`updatedISO` drives the red "Out of date" line: the page shows it once the stamp is 30 minutes old, and keeps it current without a reload. Set it on every rebuild, even when nothing else changed, because a sweep that found nothing new still counts as a check.
+
+`reportBack` is added, after a blank line, to the end of every **Copy** and **Copy all answers** for a session's question. The default is "When you've acted on this, send the <manager> session a one-line update with SendMessage: what you did and what's next." Answers whose header is the manager (the manager's own questions and to-do questions) don't get it, and neither do pastes or starter prompts.
 
 ## Session
 
