@@ -45,6 +45,8 @@ The board drifts for one main reason: the user pastes an answer straight into a 
 2. **A sweep every 15 minutes.** Right after setting up the hub, and on every resume, run `CronList`. If the sweep isn't there, create it with `CronCreate` and the prompt in `references/sweep.md`. Cron jobs live only in this session and expire after 7 days, so re-create it after a restart or expiry.
 3. **The red "Out of date" line**, for when the first two fail. If the user asks you to refresh, run the sweep right away.
 
+- **Rewrite, never append.** When a session changes, rewrite its state, need and two or three `where` lines from what's true now, and delete what isn't. Prepending a new line to old ones leaves the section contradicting itself.
+- **Check the board against itself on every sweep:** each "waiting on you" in the overview matches an open question, need or reminder; nothing answered is still listed; a session waiting on the user for a paste or a go says so in its `need`; to-do items that shipped are removed.
 - **Updates from sessions:** fold each into its section and rebuild the page. Text a session hands over for the user to paste elsewhere goes in its `pastes`. Tell the user in two or three lines, with anything that needs them first.
 - **Reminders aren't questions.** When the user asks to be reminded of something, put it in the manager entry's `reminders` (text and when), not in `questions`. Schedule a one-shot `CronCreate` for the time if a session will be open.
 - **The user's answers:** each pasted block starts with a session name and one or more `Re:` parts. Send each block to its session in one `SendMessage`, marked "relayed from the manager session", then take the answered questions off the board.
