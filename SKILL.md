@@ -28,7 +28,7 @@ It needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__*`
 
 The page renders itself from the JSON in `<script id="board-data">`. Every update is a JSON edit, never markup. `references/data-schema.md` has every field and how the page lays them out.
 
-1. Copy `assets/board-template.html` and fill `board-data`. Set `updated` from `date`; never estimate the time.
+1. Copy `assets/board-template.html` and fill `board-data`. Set `updated` and `updatedISO` from `date` on every rebuild; never estimate the time. The page shows a red "Out of date" line once `updatedISO` is 30 minutes old.
 2. **Overview:** one readable paragraph on what's happening now, and at most one more on what already happened. No lists.
 3. **Sessions:** one entry per open session. Its `need` subtitle says in a few words what the user has to do, or that nothing is needed. Mark `urgent` what blocks other work or what the user is waiting on today. Inside: a state line, two to four "where it stands" lines, and that session's questions. Nothing appears twice on the page. The manager's own entry is `isManager`, and it shows only when the manager has questions.
 4. **Questions:** two or three options, the recommended one marked `"rec": true`. Each option's `text` is the full reply the session will get, written so it can act without more context. When a `need` asks the user to type or paste something, that session gets a question or paste for it.
@@ -39,6 +39,11 @@ The page renders itself from the JSON in `<script id="board-data">`. Every updat
 9. **Artifact copy, only when asked:** publish with `Artifact` (`title` "LEJ Session Board", `icon` "list") for a phone copy, at most every 15–20 minutes. Artifact publishes are capped per account per day (200 on some plans, shared with every artifact, reset at UTC midnight). If a publish is refused, say so right away and keep the local page current.
 
 ## 4. Keep it current
+
+The board drifts for one main reason: the user pastes an answer straight into a session, and the manager never hears about it. Three things close that gap, and all three stay on:
+1. **Every copied answer asks for a report back.** When the user copies an answer for a session, the page adds a last line asking that session to send the manager a one-line update (`reportBack` in the data; there's a default). Answers addressed to the manager don't get the line.
+2. **A sweep every 15 minutes.** Right after setting up the hub, and on every resume, run `CronList`. If the sweep isn't there, create it with `CronCreate` and the prompt in `references/sweep.md`. Cron jobs live only in this session and expire after 7 days, so re-create it after a restart or expiry.
+3. **The red "Out of date" line**, for when the first two fail. If the user asks you to refresh, run the sweep right away.
 
 - **Updates from sessions:** fold each into its section and rebuild the page. Text a session hands over for the user to paste elsewhere goes in its `pastes`. Tell the user in two or three lines, with anything that needs them first.
 - **The user's answers:** each pasted block starts with a session name and one or more `Re:` parts. Send each block to its session in one `SendMessage`, marked "relayed from the manager session", then take the answered questions off the board.
@@ -67,3 +72,4 @@ If `assets/` or `references/` is missing (a skills library can sync `SKILL.md` a
 - `scripts/build_local.py`: turns the filled template into a standalone, auto-reloading page.
 - `references/data-schema.md`: every JSON field, and how the page lays it out.
 - `references/coordination-rule.md`: the `CLAUDE.md` block that makes sessions report to the manager.
+- `references/sweep.md`: the 15-minute sweep prompt for `CronCreate`.

@@ -27,6 +27,7 @@ body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--font-body)
 header { display: grid; gap: 6px; }
 h1 { font: 700 34px/1.1 var(--font-display); letter-spacing: -0.02em; margin: 0; }
 .stamp { color: var(--muted); font-size: 14px; }
+.stale { color: var(--accent); font-weight: 600; font-size: 14px; }
 code { font-family: var(--font-mono); font-size: 13px; }
 
 .session { display: grid; gap: 16px; padding: 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; min-width: 0; }
@@ -95,6 +96,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     <h1>LEJ Session Board</h1>
     <div class="qtotal" id="qtotal" hidden></div>
     <div class="stamp" id="stamp"></div>
+    <div class="stale" id="stale" hidden></div>
   </header>
   <section class="overview" id="overview" aria-label="Overview"></section>
   <div id="sessions" style="display:grid;gap:24px"></div>
@@ -108,6 +110,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
 <script type="application/json" id="board-data">
 {
   "updated": "Monday, Oct 5, 2026, 4:30 pm ET",
+  "updatedISO": "2026-10-05T20:30:00Z",
   "overview": "Right now: PRJ4 is ready to deploy and waiting on your go, and PRJ2 needs one decision before it can build. PRJ3 is testing on its own.\n\nAlready done: PRJ1 shipped the new sign-up flow this morning, and two finished sessions are archived.",
   "projectFolder": "~/code/my-project",
   "manager": "Project Manager",
@@ -224,6 +227,21 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   var total = asking.reduce(function (n, s) { return n + s.questions.length; }, 0);
   if (total) { var qt = document.getElementById('qtotal'); qt.hidden = false; qt.textContent = nQ(total) + ' across ' + asking.length + (asking.length === 1 ? ' session' : ' sessions'); }
   document.getElementById('stamp').textContent = 'Updated ' + data.updated + ' · kept by the ' + data.manager + ' session';
+
+  // A board nobody has checked in 30 minutes says so, so the user knows not to trust it.
+  var checked = Date.parse(data.updatedISO || '');
+  function staleness() {
+    var box = document.getElementById('stale'), mins = Math.round((Date.now() - checked) / 60000);
+    if (isNaN(checked) || mins < 30) { box.hidden = true; return; }
+    box.textContent = 'Out of date: the ' + data.manager + ' last checked the sessions ' + (mins < 120 ? mins + ' minutes' : Math.round(mins / 60) + ' hours') + ' ago. Ask it to refresh.';
+    box.hidden = false;
+  }
+  staleness(); setInterval(staleness, 60000);
+
+  // Every answer pasted into a session ends with a reminder to report back, so the board hears about it.
+  // Answers addressed to the manager itself don't need it.
+  var reportBack = data.reportBack || ('When you\'ve acted on this, send the ' + data.manager + ' session a one-line update with SendMessage: what you did and what\'s next.');
+  function withReport(header, text) { return header === data.manager ? text : text + '\n\n' + reportBack; }
   document.getElementById('todo-intro').textContent = data.todoIntro;
 
   // One question: its options (the recommended one picked by default), a "Write your own answer" option, an editable
@@ -260,7 +278,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     box.appendChild(fs); box.appendChild(ta);
     var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
     var btn = copyButton('q:' + q.id);
-    btn.addEventListener('click', function () { copyText(header + '\nRe: ' + q.title + '\n' + ta.value.trim(), btn, 'q:' + q.id); });
+    btn.addEventListener('click', function () { copyText(withReport(header, header + '\nRe: ' + q.title + '\n' + ta.value.trim()), btn, 'q:' + q.id); });
     act.appendChild(btn); box.appendChild(act);
     return { box: box, q: q, ta: ta, btn: btn };
   }
@@ -307,7 +325,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       allAct.appendChild(el('span', 'to', 'All ' + answers.length + ' answers in one paste'));
       var allBtn = copyButton(allKey); allBtn.textContent = allBtn.classList.contains('was') ? '✓ Copied' : 'Copy all answers';
       allBtn.addEventListener('click', function () {
-        var text = s.name + '\n\n' + answers.map(function (a) { return 'Re: ' + a.q.title + '\n' + a.ta.value.trim(); }).join('\n\n');
+        var text = withReport(s.name, s.name + '\n\n' + answers.map(function (a) { return 'Re: ' + a.q.title + '\n' + a.ta.value.trim(); }).join('\n\n'));
         copyText(text, allBtn, allKey, function () {
           answers.forEach(function (a) { a.btn.textContent = '✓ Copied'; a.btn.classList.add('was'); save('copied:q:' + a.q.id, '1'); });
         });

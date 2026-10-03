@@ -16,6 +16,7 @@ Send it a short update with SendMessage (`to`: the id above), result first, a fe
 - **Question for <user>:** see below.
 - **Before shared changes:** before a migration, a deploy, or edits to files another session may also be changing. Ask the manager for a migration number.
 - **Done:** the result, the commit, and anything left open.
+- **After <user> pastes an answer into your session:** a one-line update once you've acted on it. The manager clears the question from the board only when it hears from you.
 
 When another session works in the same area, message it directly, agree who changes what and who deploys first, then tell the manager.
 
