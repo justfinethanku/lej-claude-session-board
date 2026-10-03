@@ -46,6 +46,7 @@ The board drifts for one main reason: the user pastes an answer straight into a 
 3. **The red "Out of date" line**, for when the first two fail. If the user asks you to refresh, run the sweep right away.
 
 - **Updates from sessions:** fold each into its section and rebuild the page. Text a session hands over for the user to paste elsewhere goes in its `pastes`. Tell the user in two or three lines, with anything that needs them first.
+- **Reminders aren't questions.** When the user asks to be reminded of something, put it in the manager entry's `reminders` (text and when), not in `questions`. Schedule a one-shot `CronCreate` for the time if a session will be open.
 - **The user's answers:** each pasted block starts with a session name and one or more `Re:` parts. Send each block to its session in one `SendMessage`, marked "relayed from the manager session", then take the answered questions off the board.
 - **Approvals:** a relayed answer approves building, not shipping. A production deploy, a production migration or a public push needs the user's go typed in the session that does it. The question's `to` says so.
 - **Deploy queue:** one deploy at a time. Clear one session, and clear the next only after the last reports its commit. Each session merges main and checks the ancestor right before deploying.

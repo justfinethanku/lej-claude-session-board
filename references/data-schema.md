@@ -33,6 +33,7 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 | `tone` | `"needs"` (terracotta, waiting on the user), `"done"` (green), or `""`. |
 | `where` | Two to four plain lines on where it stands. Plain text, escaped on render. |
 | `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count at the top of each open section. |
+| `reminders` | Optional. Things the user asked to be reminded of: `[{ "text", "when"? }]`. They render as a Reminders list inside the section, with no options and no Copy, because a reminder isn't a question. The manager's entry shows when it holds reminders, even with no questions. |
 | `pastes` | Optional. Ready-made text the user pastes somewhere else, such as a prompt for another machine: `{ "id", "title", "to", "note"?, "text" }`. It shows as an editable block, and Copy puts the text alone, with no header. |
 
 Sections start collapsed to the title and `need` line, and open on click. The page orders them: `urgent` first, then sessions with questions, pastes or `tone: "needs"`, then the rest, keeping the data's order within each group. A section the viewer opens stays open across reloads.

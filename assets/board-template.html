@@ -38,6 +38,10 @@ code { font-family: var(--font-mono); font-size: 13px; }
 .state.needs { color: var(--accent); }
 .state.done { color: var(--ok); }
 .where { margin: 0; padding-left: 18px; display: grid; gap: 5px; max-width: 72ch; }
+.reminders { display: grid; gap: 6px; max-width: 72ch; }
+.reminders h3 { margin: 0; font: 600 15px var(--font-body); }
+.reminders ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.reminders .when { color: var(--muted); }
 
 .overview { display: grid; gap: 10px; max-width: 72ch; font-size: 16.5px; }
 .overview p { margin: 0; }
@@ -293,7 +297,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   function rank(s) { return s.urgent ? 0 : ((s.questions || []).length || (s.pastes || []).length || s.tone === 'needs') ? 1 : 2; }
   var host = document.getElementById('sessions');
   data.sessions
-    .filter(function (s) { return !s.isManager || (s.questions || []).length || (s.pastes || []).length; })
+    .filter(function (s) { return !s.isManager || (s.questions || []).length || (s.pastes || []).length || (s.reminders || []).length; })
     .map(function (s, i) { return { s: s, i: i }; })
     .sort(function (a, b) { return rank(a.s) - rank(b.s) || a.i - b.i; })
     .forEach(function (x) {
@@ -313,6 +317,12 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     body.appendChild(el('div', 'state' + (s.tone ? ' ' + s.tone : ''), esc(s.state)));
     if (s.where && s.where.length) {
       var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, esc(w))); }); body.appendChild(ul);
+    }
+    // Reminders: things the user asked to be reminded of. Not questions, so no options and no copy.
+    if ((s.reminders || []).length) {
+      var rem = el('div', 'reminders'); rem.appendChild(el('h3', null, 'Reminders'));
+      var rl = el('ul'); s.reminders.forEach(function (r) { rl.appendChild(el('li', null, esc(r.text) + (r.when ? ' <span class="when">· ' + esc(r.when) + '</span>' : ''))); });
+      rem.appendChild(rl); body.appendChild(rem);
     }
     var answers = [];
     (s.questions || []).forEach(function (q) {
