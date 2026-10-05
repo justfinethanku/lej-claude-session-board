@@ -11,7 +11,7 @@ One session becomes the **manager**. Every other session in the project folder r
 - **Question counts and copy marks:** the header says how many questions need you, and each Copy button turns into "✓ Copied" once used.
 - **It stays current on its own:** every answer you copy for a session ends with a line asking it to tell the manager once it's acted. The manager also sweeps every session every 15 minutes, and if nobody has checked in 30 minutes the board says "Out of date" in red.
 
-The manager also runs the deploy queue (one deploy at a time), hands out migration numbers, keeps session titles in the `PRJ5 Short name` pattern, and catches overlaps between sessions.
+The manager also keeps the deploy queue (one deploy at a time, best enforced by a lock and queue file in your deploy script so sessions don't wait on manager messages), hands out migration numbers, keeps session titles in the `PRJ5 Short name` pattern, and catches overlaps between sessions.
 
 It uses Claude Desktop's session tools, so it runs in the **Code tab of the Claude desktop app**.
 

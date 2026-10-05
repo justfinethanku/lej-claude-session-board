@@ -28,7 +28,7 @@ When another session works in the same area, message it directly, agree who chan
 
 ## Deploys: one at a time
 
-Send the manager "ready to deploy" with your branch head and wait for "clear to deploy". Right before deploying, fetch, merge the main branch, run the tests and confirm the main branch is an ancestor of your head. Push right after, and send the manager the commit.
+If the deploy script has a queue, add yourself with its queue command and deploy when the script says it's your turn; it refuses anyone else and refuses a head that doesn't contain the main branch. Otherwise send the manager "ready to deploy" with your branch head and wait for its "clear to deploy"; a clear is good only for the time it names. Either way, <user>'s go is typed in your session first. Right before deploying, fetch, merge the main branch, run the tests and confirm the main branch is an ancestor of your head. Push right after (the script does this when it can), and send the manager the commit.
 
 ## Session titles
 
