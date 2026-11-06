@@ -62,7 +62,7 @@ npm ci --ignore-scripts
 npm test
 ```
 
-The tests render the template and built page in jsdom, check HTML and URL injection cases, and verify the demo and original build command. The generated page has no npm runtime dependencies.
+The tests render the template and built page in jsdom, check HTML and URL injection cases, verify state isolation between boards and persistence across rebuilds, and exercise the demo and original build command. The generated page has no npm runtime dependencies.
 
 ## Look
 
