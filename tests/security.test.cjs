@@ -29,6 +29,40 @@ function open(html) {
 }
 function close(t, page) { t.after(() => page.dom.window.close()); return page; }
 
+test('plain labels preserve literal markup and entities alongside recommendation and reminder spans', t => {
+  const value = data();
+  const text = '<img src=x onerror="window.pwned=1"> &amp; "literal" <b>text</b>';
+  const session = value.sessions[0];
+  session.name = session.state = session.need = text;
+  session.where = [text];
+  session.questions = [{ id: 'literal', title: text, note: text, to: text,
+    options: [{ label: text, text, rec: true }] }];
+  session.reminders = [{ text, when: text }, { text }];
+  session.actions = [{ id: 'literal-action', title: text, why: text, steps: [text], text }];
+  session.pastes = [{ id: 'literal-paste', title: text, note: text, to: text, text }];
+  value.groups[0].title = text;
+  value.groups[0].items = [{ text: '<b>Rich prose</b>', starter: { title: 'PRJ5 ' + text, prompt: text } }];
+  const page = close(t, render(value));
+  const doc = page.document;
+  for (const selector of ['.session h2', '.need', '.state', '.where li', '.q-title', '.q-note',
+    '.action h3', '.action .q-note', '.action ol li', '.action pre', '.group-head h3']) {
+    assert.equal(doc.querySelector(selector).textContent, text, selector);
+  }
+  const label = doc.querySelector('.opts label > span');
+  assert.equal(label.firstChild.textContent, text);
+  assert.equal(label.querySelector('.rec').textContent, 'Recommended');
+  assert.equal(doc.querySelector('.reminders li').textContent, text + ' · ' + text);
+  assert.equal(doc.querySelector('.reminders .when').textContent, '· ' + text);
+  assert.equal(doc.querySelectorAll('.reminders li')[1].textContent, text);
+  assert.equal(doc.querySelector('.q .to').textContent, 'Paste into ' + text);
+  assert.equal(doc.querySelector('#reply-literal').value, text);
+  assert.equal(doc.querySelector('.starter-title').textContent, 'PRJ5 ' + text);
+  assert.equal(doc.querySelector('.items b').textContent, 'Rich prose');
+  assert.equal(doc.querySelector('.wrap img, .wrap [onerror]'), null);
+  assert.equal(page.dom.window.pwned, undefined);
+  assert.deepEqual(page.errors, []);
+});
+
 test('task and backlog formatting cannot install executable elements or attributes', t => {
   const value = data();
   const payload = '<b onclick="window.pwned=1">Bold <code onmouseover="window.pwned=2">code</code></b>' +

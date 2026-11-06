@@ -215,8 +215,9 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   var storagePrefix = 'lej-board:' + JSON.stringify(identity) + ':';
   function load(k) { try { return localStorage.getItem(storagePrefix + k); } catch (e) { return null; } }
   function save(k, v) { try { localStorage.setItem(storagePrefix + k, v); } catch (e) {} }
-  function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // Most board content is plain text: avoid escaping it and invoking the HTML
+  // parser for every label. Only formattedItem parses the documented rich prose.
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (arguments.length > 2) n.textContent = String(text); return n; }
 
   // Board prose supports only the documented <b>/<code> formatting. Parse in an
   // inert template, then copy text and those elements without any attributes.
@@ -309,8 +310,8 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   // "Re: <title>", then the reply.
   function questionBlock(q, header) {
     var box = el('div', 'q');
-    box.appendChild(el('div', 'q-title', esc(q.title)));
-    if (q.note) box.appendChild(el('div', 'q-note', esc(q.note)));
+    box.appendChild(el('div', 'q-title', q.title));
+    if (q.note) box.appendChild(el('div', 'q-note', q.note));
     var fs = el('fieldset', 'opts');
     var ta = el('textarea'); ta.setAttribute('aria-label', 'Reply to: ' + q.title); ta.id = 'reply-' + q.id;
     var opts = q.options.concat([{ label: 'Write your own answer', text: '', own: true }]);
@@ -318,7 +319,9 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     opts.forEach(function (o, i) {
       var lab = el('label'); var r = el('input'); r.type = 'radio'; r.name = 'opt-' + q.id; r.id = 'opt-' + q.id + '-' + i;
       lab.appendChild(r);
-      lab.appendChild(el('span', null, esc(o.label) + (o.rec ? '<span class="rec">Recommended</span>' : '')));
+      var labelText = el('span', null, o.label);
+      if (o.rec) labelText.appendChild(el('span', 'rec', 'Recommended'));
+      lab.appendChild(labelText);
       r.addEventListener('change', function () {
         ta.value = o.own ? (load('own:' + q.id) || '') : o.text;
         ta.placeholder = o.own ? 'Write your own answer' : '';
@@ -338,7 +341,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       resetCopy(btn, 'q:' + q.id);
     });
     box.appendChild(fs); box.appendChild(ta);
-    var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
+    var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + q.to));
     var btn = copyButton('q:' + q.id);
     btn.addEventListener('click', function () { copyText(withReport(header, header + '\nRe: ' + q.title + '\n' + ta.value.trim()), btn, 'q:' + q.id); });
     act.appendChild(btn); box.appendChild(act);
@@ -347,7 +350,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
 
   // The manager's overview: one or two short paragraphs on what's happening now and what already happened.
   var ov = document.getElementById('overview');
-  String(data.overview || '').split(/\n\s*\n/).forEach(function (p) { if (p.trim()) ov.appendChild(el('p', null, esc(p.trim()))); });
+  String(data.overview || '').split(/\n\s*\n/).forEach(function (p) { if (p.trim()) ov.appendChild(el('p', null, p.trim())); });
   if (!ov.children.length) ov.hidden = true;
 
   // Urgent sessions first, then sessions with questions, then the rest. Each starts collapsed to its title and what's
@@ -364,31 +367,31 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     if (load('open:' + s.id) === '1') sec.open = true;
     sec.addEventListener('toggle', function () { save('open:' + s.id, sec.open ? '1' : '0'); });
     var sum = el('summary');
-    sum.appendChild(el('h2', null, esc(s.name)));
+    sum.appendChild(el('h2', null, s.name));
     var nqs = (s.questions || []).length;
     var need = s.need || (nqs ? nQ(nqs) : 'Nothing needed from you');
-    sum.appendChild(el('div', 'need' + (s.urgent || nqs || (s.pastes || []).length || (s.actions || []).length || s.tone === 'needs' ? ' ask' : ''), (s.urgent ? 'Urgent: ' : '') + esc(need)));
+    sum.appendChild(el('div', 'need' + (s.urgent || nqs || (s.pastes || []).length || (s.actions || []).length || s.tone === 'needs' ? ' ask' : ''), (s.urgent ? 'Urgent: ' : '') + need));
     sec.appendChild(sum);
     var body = el('div', 'session-body');
     var nq = (s.questions || []).length;
     if (nq) body.appendChild(el('div', 'qcount', nQ(nq) + ' in this section' + (nq > 1 ? ' (answer all ' + nq + ', or use Copy all answers at the bottom)' : '')));
-    body.appendChild(el('div', 'state' + (s.tone ? ' ' + s.tone : ''), esc(s.state)));
+    body.appendChild(el('div', 'state' + (s.tone ? ' ' + s.tone : ''), s.state));
     if (s.where && s.where.length) {
-      var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, esc(w))); }); body.appendChild(ul);
+      var ul = el('ul', 'where'); s.where.forEach(function (w) { ul.appendChild(el('li', null, w)); }); body.appendChild(ul);
     }
     // Actions: things only the user can do (a key, a click, a setting). Everything needed to do it sits here:
     // the link, the steps, any text to paste, and a Copy that tells the manager it's done.
     (s.actions || []).forEach(function (a) {
-      var box = el('div', 'action'); box.appendChild(el('h3', null, esc(a.title)));
-      if (a.why) box.appendChild(el('div', 'q-note', esc(a.why)));
+      var box = el('div', 'action'); box.appendChild(el('h3', null, a.title));
+      if (a.why) box.appendChild(el('div', 'q-note', a.why));
       if (a.link) { var linkBox = el('div'); linkBox.appendChild(actionLink(a)); box.appendChild(linkBox); }
-      if ((a.steps || []).length) { var ol = el('ol'); a.steps.forEach(function (st) { ol.appendChild(el('li', null, esc(st))); }); box.appendChild(ol); }
+      if ((a.steps || []).length) { var ol = el('ol'); a.steps.forEach(function (st) { ol.appendChild(el('li', null, st)); }); box.appendChild(ol); }
       if (a.text) {
-        box.appendChild(el('pre', null, esc(a.text)));
-        var ca = el('div', 'actions'); ca.appendChild(el('span', 'to', esc(a.textTo || 'Copy this')));
+        box.appendChild(el('pre', null, a.text));
+        var ca = el('div', 'actions'); ca.appendChild(el('span', 'to', a.textTo || 'Copy this'));
         var cb = copyButton('act-text:' + a.id); cb.addEventListener('click', function () { copyText(a.text, cb, 'act-text:' + a.id); }); ca.appendChild(cb); box.appendChild(ca);
       }
-      var da = el('div', 'actions'); da.appendChild(el('span', 'to', 'When it\'s done, paste into ' + esc(data.manager)));
+      var da = el('div', 'actions'); da.appendChild(el('span', 'to', 'When it\'s done, paste into ' + data.manager));
       var db = copyButton('act-done:' + a.id); db.textContent = db.classList.contains('was') ? '✓ Copied' : 'Copy "done"';
       db.addEventListener('click', function () { copyText(data.manager + '\nDone: ' + a.title, db, 'act-done:' + a.id); }); da.appendChild(db); box.appendChild(da);
       body.appendChild(box);
@@ -401,7 +404,11 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     // Reminders: things the user asked to be reminded of. Not questions, so no options and no copy.
     if ((s.reminders || []).length) {
       var rem = el('div', 'reminders'); rem.appendChild(el('h3', null, 'Reminders'));
-      var rl = el('ul'); s.reminders.forEach(function (r) { rl.appendChild(el('li', null, esc(r.text) + (r.when ? ' <span class="when">· ' + esc(r.when) + '</span>' : ''))); });
+      var rl = el('ul'); s.reminders.forEach(function (r) {
+        var li = el('li', null, r.text);
+        if (r.when) { li.appendChild(document.createTextNode(' ')); li.appendChild(el('span', 'when', '· ' + r.when)); }
+        rl.appendChild(li);
+      });
       rem.appendChild(rl); body.appendChild(rem);
     }
     var answers = [];
@@ -429,14 +436,14 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     }
     (s.pastes || []).forEach(function (pp) {
       var box = el('div', 'q');
-      box.appendChild(el('div', 'q-title', esc(pp.title)));
-      if (pp.note) box.appendChild(el('div', 'q-note', esc(pp.note)));
+      box.appendChild(el('div', 'q-title', pp.title));
+      if (pp.note) box.appendChild(el('div', 'q-note', pp.note));
       var key = 'paste:' + pp.id;
       var ta = el('textarea', 'prompt'); ta.id = 'paste-' + pp.id; ta.setAttribute('aria-label', pp.title);
       var saved = load('text:' + key); ta.value = saved !== null ? saved : pp.text;
       ta.addEventListener('input', function () { save('text:' + key, ta.value); resetCopy(btn, key); });
       box.appendChild(ta);
-      var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(pp.to)));
+      var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + pp.to));
       var btn = copyButton(key);
       btn.addEventListener('click', function () { copyText(ta.value.trim(), btn, key); });
       act.appendChild(btn); box.appendChild(act); body.appendChild(box);
@@ -451,7 +458,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     var gkey = 'open:group:' + g.title;
     var grp = el('details', 'group'); if (load(gkey) === '1') grp.open = true;
     grp.addEventListener('toggle', function () { save(gkey, grp.open ? '1' : '0'); });
-    var gsum = el('summary', 'group-head'); gsum.appendChild(el('h3', null, esc(g.title)));
+    var gsum = el('summary', 'group-head'); gsum.appendChild(el('h3', null, g.title));
     var nStart = g.items.filter(function (it) { return it.starter; }).length;
     gsum.appendChild(el('span', 'group-count', g.items.length + (g.items.length === 1 ? ' item' : ' items') + (nStart ? ' · ' + nStart + (nStart === 1 ? ' starter prompt' : ' starter prompts') : '')));
     grp.appendChild(gsum);
@@ -461,18 +468,18 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       if (it.question) li.appendChild(questionBlock(it.question, data.manager).box);
       if (it.starter) {
         var st = it.starter; var key = 'starter:' + st.title.split(' ')[0];
-        var det = el('details'); var sum = el('summary', null, esc(st.title));
+        var det = el('details'); var sum = el('summary', null, st.title);
         var doneMark = el('span', 'done-mark', load('copied:' + key) ? '✓ copied' : '');
         sum.appendChild(doneMark); det.appendChild(sum);
         var wrap = el('div', 'starter');
-        wrap.appendChild(el('div', 'starter-title', esc(st.title)));
+        wrap.appendChild(el('div', 'starter-title', st.title));
         var ta = el('textarea', 'prompt'); ta.id = 'prompt-' + key.replace(':', '-'); ta.setAttribute('aria-label', 'Starter prompt ' + st.title);
         var saved = load('text:' + key); ta.value = saved !== null ? saved : st.prompt;
         ta.addEventListener('input', function () {
           save('text:' + key, ta.value); resetCopy(btn, key); doneMark.textContent = '';
         });
         wrap.appendChild(ta);
-        var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into a new session in ' + esc(data.projectFolder) + ', named ' + esc(st.title)));
+        var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into a new session in ' + data.projectFolder + ', named ' + st.title));
         var btn = copyButton(key);
         btn.addEventListener('click', function () { copyText(st.title + '\n\n' + ta.value.trim(), btn, key, function () { doneMark.textContent = '✓ copied'; }); });
         act.appendChild(btn); wrap.appendChild(act); det.appendChild(wrap); li.appendChild(det);
