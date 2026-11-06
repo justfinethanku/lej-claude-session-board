@@ -249,9 +249,21 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     return link;
   }
 
+  function resetCopy(btn, key, label) {
+    btn.textContent = label || 'Copy'; btn.classList.remove('was');
+    // An earlier clipboard promise must not mark newly edited text as copied.
+    btn.copyVersion = (btn.copyVersion || 0) + 1;
+    save('copied:' + key, '');
+  }
   function copyText(text, btn, key, onDone) {
-    function mark() { btn.textContent = '✓ Copied'; btn.classList.add('was'); save('copied:' + key, '1'); if (onDone) onDone(); }
+    var version = btn.copyVersion || 0;
+    function current() { return version === (btn.copyVersion || 0); }
+    function mark() {
+      if (!current()) return;
+      btn.textContent = '✓ Copied'; btn.classList.add('was'); save('copied:' + key, '1'); if (onDone) onDone();
+    }
     function fallback() {
+      if (!current()) return;
       var t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', '');
       t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select();
       var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
@@ -311,6 +323,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
         ta.value = o.own ? (load('own:' + q.id) || '') : o.text;
         ta.placeholder = o.own ? 'Write your own answer' : '';
         save('pick:' + q.id, String(i)); save('text:' + q.id, ta.value);
+        resetCopy(btn, 'q:' + q.id);
         if (o.own) ta.focus();
       });
       radios.push(r); fs.appendChild(lab);
@@ -322,6 +335,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     ta.addEventListener('input', function () {
       save('text:' + q.id, ta.value);
       if (radios[radios.length - 1].checked) save('own:' + q.id, ta.value);
+      resetCopy(btn, 'q:' + q.id);
     });
     box.appendChild(fs); box.appendChild(ta);
     var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(q.to)));
@@ -400,6 +414,11 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       var allAct = el('div', 'actions copy-all');
       allAct.appendChild(el('span', 'to', 'All ' + answers.length + ' answers in one paste'));
       var allBtn = copyButton(allKey); allBtn.textContent = allBtn.classList.contains('was') ? '✓ Copied' : 'Copy all answers';
+      answers.forEach(function (a) {
+        function changed() { resetCopy(allBtn, allKey, 'Copy all answers'); }
+        a.box.addEventListener('input', changed, true);
+        a.box.addEventListener('change', changed, true);
+      });
       allBtn.addEventListener('click', function () {
         var text = withReport(s.name, s.name + '\n\n' + answers.map(function (a) { return 'Re: ' + a.q.title + '\n' + a.ta.value.trim(); }).join('\n\n'));
         copyText(text, allBtn, allKey, function () {
@@ -415,7 +434,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       var key = 'paste:' + pp.id;
       var ta = el('textarea', 'prompt'); ta.id = 'paste-' + pp.id; ta.setAttribute('aria-label', pp.title);
       var saved = load('text:' + key); ta.value = saved !== null ? saved : pp.text;
-      ta.addEventListener('input', function () { save('text:' + key, ta.value); });
+      ta.addEventListener('input', function () { save('text:' + key, ta.value); resetCopy(btn, key); });
       box.appendChild(ta);
       var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + esc(pp.to)));
       var btn = copyButton(key);
@@ -449,7 +468,9 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
         wrap.appendChild(el('div', 'starter-title', esc(st.title)));
         var ta = el('textarea', 'prompt'); ta.id = 'prompt-' + key.replace(':', '-'); ta.setAttribute('aria-label', 'Starter prompt ' + st.title);
         var saved = load('text:' + key); ta.value = saved !== null ? saved : st.prompt;
-        ta.addEventListener('input', function () { save('text:' + key, ta.value); });
+        ta.addEventListener('input', function () {
+          save('text:' + key, ta.value); resetCopy(btn, key); doneMark.textContent = '';
+        });
         wrap.appendChild(ta);
         var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into a new session in ' + esc(data.projectFolder) + ', named ' + esc(st.title)));
         var btn = copyButton(key);
