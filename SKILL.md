@@ -28,14 +28,14 @@ It needs the Claude Desktop Code tab's session tools (`mcp__ccd_session_mgmt__*`
 
 The page renders itself from the JSON in `<script id="board-data">`. Keep updates in a separate `board-data.json` file and pass it to the builder with `--data`; the builder escapes it for the HTML script context. `references/data-schema.md` has every field and how the page lays them out.
 
-1. Copy `assets/board-template.html` and put your board data in `board-data.json`. Set `updated` and `updatedISO` from `date` on every rebuild; never estimate the time. The page shows a red "Out of date" line once `updatedISO` is 30 minutes old.
+1. Keep your board data in a durable project file, such as `.session-board/board-data.json`, outside the skill installation. Use `assets/board-template.html` from this skill's directory. Set `updated` and `updatedISO` from `date` on every rebuild; never estimate the time. The page shows a red "Out of date" line once `updatedISO` is 30 minutes old. The builder preserves these timestamps; it does not update them.
 2. **Overview:** one readable paragraph on what's happening now, and at most one more on what already happened. No lists.
 3. **Sessions:** one entry per open session. Its `need` subtitle says in a few words what the user has to do, or that nothing is needed. Mark `urgent` what blocks other work or what the user is waiting on today. Inside: a state line, two to four "where it stands" lines, and that session's questions. Nothing appears twice on the page. The manager's own entry is `isManager`, and it shows only when the manager has questions.
 4. **Questions:** two or three options, the recommended one marked `"rec": true`. Each option's `text` is the full reply the session will get, written so it can act without more context. When a `need` asks the user to type or paste something, that session gets a question or paste for it.
 5. **To-do list:** read the project's running to-do file (for example `docs/TODO.md`), and group open items by who acts: the user's call, other people, Claude builds, later. Leave out work an open session is already doing. Every item in the user's-call group gets a `question`.
 6. **Starter prompts:** each Claude-builds item gets one, titled `<PREFIX><n> <short name>` (see section 5). Write it as a self-contained brief with `<context>`, `<instructions>` and `<output>`. Name the files, specs and house rules to read, and say where the user's OK comes before new infrastructure, migrations or deploys. If the `agent-prompt-authoring` skill is installed, follow it.
 7. **Look:** keep the template's LEJ tokens: Bricolage Grotesque, Hanken Grotesk and JetBrains Mono; terracotta `#BD4F2E` on soft white `#FCFCFB`, charcoal `#232427` text, `#E3E3DF` hairlines. Terracotta marks only what needs the user and the primary actions. No pills, eyebrow labels or numbered sections.
-8. **Publish locally:** `python3 scripts/build_local.py <board.html> "<project folder>/LEJ Session Board.html" --data <board-data.json>`, and `open` the output once. It auto-reloads every 60 seconds unless the user is typing. Re-run the script after every change.
+8. **Publish locally:** follow [Build from your project folder](README.md#build-from-your-project-folder) for the installed-path command. Resolve the script and template relative to this skill's directory, not the project's working directory. Use the project's existing JSON and output path on rebuilds; `open` the output once on macOS. Re-run the builder after every data change. The page reloads every 60 seconds unless a text field has focus or the user interacted in the last 20 seconds.
 9. **Artifact copy, only when asked:** use the generated page, whose JSON is already escaped, and publish with `Artifact` (`title` "LEJ Session Board", `icon` "list") for a phone copy, at most every 15–20 minutes. Artifact publishes are capped per account per day (200 on some plans, shared with every artifact, reset at UTC midnight). If a publish is refused, say so right away and keep the local page current.
 
 ## 4. Keep it current
@@ -72,7 +72,7 @@ The `CLAUDE.md` rule and this skill drift as rules get added. When either grows 
 
 ## Files
 
-If `assets/` or `references/` is missing (a skills library can sync `SKILL.md` alone), clone the full skill: `git clone https://github.com/justfinethanku/lej-claude-session-board.git ~/.claude/skills/lej-session-board`.
+If `assets/`, `scripts/` or `references/` is missing (a skills library can sync `SKILL.md` alone), follow [Update or repair an installation](README.md#update-or-repair-an-installation). A clone into an existing nonempty skill directory fails; preserve that directory at an unused backup path before cloning the complete skill.
 
 - `assets/board-template.html`: the board page, with example data.
 - `scripts/build_local.py`: turns the filled template into a standalone, auto-reloading page.
