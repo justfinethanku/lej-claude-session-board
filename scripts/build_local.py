@@ -5,8 +5,9 @@
 
 <board.html> is the filled template (the same fragment the Artifact tool publishes). The output adds the
 doctype, charset and viewport, plus a script that reloads the page every 60 seconds so the open tab picks up
-each rewrite. It won't reload while you're typing or within 20 seconds of your last click, and it keeps your
-scroll position. Edited replies and "Copied" marks survive, since the page keeps them in localStorage.
+each rewrite. A header button pauses automatic refresh for this tab/page. It will not reload while a control
+has focus or within 20 seconds of interaction, and it keeps your scroll position. Edited replies and "Copied" marks survive, since the page keeps them
+in localStorage.
 """
 import argparse
 import json
@@ -16,7 +17,22 @@ import re
 RELOAD = """<script id="local-autoreload">
 (function () {
   var last = Date.now();
-  ['keydown', 'input', 'mousedown', 'scroll'].forEach(function (e) {
+  var pauseKey = 'lej-board:pause-refresh:' + location.pathname, paused = false;
+  try { paused = sessionStorage.getItem(pauseKey) === '1'; } catch (e) {}
+  var pause = document.createElement('button');
+  pause.id = 'pause-refresh'; pause.type = 'button'; pause.className = 'refresh-control';
+  pause.textContent = 'Pause automatic refresh';
+  function showPause() {
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.textContent = (paused ? '✓ ' : '') + 'Pause automatic refresh';
+  }
+  showPause();
+  pause.addEventListener('click', function () {
+    paused = !paused; last = Date.now(); showPause();
+    try { sessionStorage.setItem(pauseKey, paused ? '1' : '0'); } catch (e) {}
+  });
+  (document.querySelector('header') || document.body).appendChild(pause);
+  ['keydown', 'input', 'mousedown', 'pointerdown', 'focusin', 'scroll'].forEach(function (e) {
     document.addEventListener(e, function () { last = Date.now(); }, true);
   });
   var scrollKey = 'lej-board:scroll:' + location.pathname;
@@ -25,8 +41,8 @@ RELOAD = """<script id="local-autoreload">
   if (y) window.addEventListener('load', function () { window.scrollTo(0, y); });
   setInterval(function () {
     var a = document.activeElement;
-    var typing = a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable);
-    if (typing || Date.now() - last < 20000) return;
+    var interacting = a && (a.matches('textarea, input, button, summary, a[href], select, [tabindex]') || a.isContentEditable);
+    if (paused || interacting || Date.now() - last < 20000) return;
     try { sessionStorage.setItem(scrollKey, String(window.scrollY)); } catch (e) {}
     location.reload();
   }, 60000);
