@@ -2,7 +2,8 @@
   "name": "lej-claude-session-board",
   "private": true,
   "scripts": {
-    "test": "node --test --test-concurrency=2 tests/*.test.cjs"
+    "test": "node --test --test-concurrency=2 tests/*.test.cjs",
+    "benchmark": "node scripts/benchmark_render.cjs"
   },
   "engines": { "node": ">=22.12.0" },
   "devDependencies": { "jsdom": "31.0.0" }
