@@ -63,7 +63,7 @@ Keep project data outside the installed skill. Updating the skill does not updat
 |---|---|
 | `SKILL.md` | The instructions Claude follows: roster, hub setup, building the board, keeping it current. |
 | `assets/board-template.html` | The board page, rendered from a JSON block. Example data included. |
-| `scripts/build_local.py` | Turns the filled template into a standalone page that auto-reloads (60 s, and not while you're typing). |
+| `scripts/build_local.py` | Turns the filled template into a standalone page that auto-reloads (60 s, with a pause control). |
 | `assets/demo-data.json` | The made-up "Pantry" board from the video, with every feature filled in. |
 | `references/data-schema.md` | The JSON fields the page reads. |
 | `references/coordination-rule.md` | The `CLAUDE.md` block that makes sessions report to the manager. |
@@ -99,7 +99,7 @@ python3 "$SKILL_DIR/scripts/build_local.py" "$SKILL_DIR/assets/board-template.ht
 
 The command prints `wrote LEJ Session Board.html`. Open that file in your browser (on macOS, `open "LEJ Session Board.html"`). The generated page displays data; it does not read sessions or send answers itself. The manager updates the JSON and rebuilds; you copy answers into sessions. Browser edits stay in that browser's storage and do not write back to the JSON.
 
-Auto-reload checks every 60 seconds. It waits while a text field has focus or an interaction happened in the last 20 seconds. If an update does not appear, click outside the field and wait for the next interval, or reload manually after saving your reply. Fonts load from Google Fonts when available, with system-font fallbacks.
+Auto-reload checks every 60 seconds. Use **Pause automatic refresh** in the header when you need more time to read; a check mark means refresh is paused. Press it again to resume. The pause survives manual reloads in the same tab and page when session storage is available. Refresh also waits while a control has focus or an interaction happened in the last 20 seconds. If an update does not appear, resume refresh and click outside the controls, or reload manually after saving your reply. Fonts load from Google Fonts when available, with system-font fallbacks.
 
 The HTML template is trusted executable code. The original two-argument build command still wraps an already-filled template; it does not sanitize that source.
 
