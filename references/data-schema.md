@@ -8,6 +8,7 @@ The board page renders from the JSON in `<script type="application/json" id="boa
   "updatedISO": "2026-10-05T20:30:00Z (from `date -u +%Y-%m-%dT%H:%M:%SZ`; set on every rebuild)",
   "reportBack": "Optional. The line added to every answer copied for a session. Leave it out for the default.",
   "projectFolder": "~/code/my-project",
+  "boardId": "Optional stable identity, unique to this board; useful for multiple boards in one project or a project move.",
   "manager": "Project Manager",
   "overview": "One or two short paragraphs, split by a blank line: what's happening now, then what already happened.",
   "todoIntro": "One or two sentences above the to-do list.",
@@ -65,4 +66,6 @@ Each group starts collapsed to its title and item count (plus how many starter p
 
 ## What the viewer's browser keeps
 
-The option picks, edited replies, edited prompts and "✓ Copied" marks stay in the viewer's browser (localStorage, keyed by id), so a rebuild doesn't wipe them. Open sections and groups are remembered the same way. Give a question a new `id` when its wording changes, so an old edit doesn't stick to it.
+The option picks, edited replies, edited prompts and "✓ Copied" marks stay in the viewer's browser (localStorage), so a rebuild doesn't wipe them. Open sections and groups are remembered the same way. All these keys are scoped by `boardId` when supplied, otherwise by `projectFolder`, otherwise by the page's URL path. Keep that identity stable across rebuilds, and give separate boards unique identities when they share a project folder. Question ids must still be unique within a board. Give a question a new `id` when its wording changes, so an old edit doesn't stick to it.
+
+Older versions used unscoped keys. Those keys are left intact but aren't loaded because their board cannot be identified safely; finish or copy out any old drafts before updating the template. Scroll position is temporary (sessionStorage) and scoped to the page's URL path. Storage-disabled browsers can still use the board, but edits won't survive a reload. Browser handling of storage for [`file:` URLs varies](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage); identity scoping also covers boards hosted on the same HTTP(S) origin.

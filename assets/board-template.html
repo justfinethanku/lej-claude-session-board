@@ -208,8 +208,13 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
 <script>
 (function () {
   var data = JSON.parse(document.getElementById('board-data').textContent);
-  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  // All persistent UI state belongs to one board, even when several boards share
+  // an HTTP origin. Keep identity stable across rebuilds; never import ambiguous
+  // unscoped keys from older versions. Explicit ids also allow project moves.
+  var identity = data.boardId ? ['id', data.boardId] : data.projectFolder ? ['project', data.projectFolder] : ['page', location.pathname];
+  var storagePrefix = 'lej-board:' + JSON.stringify(identity) + ':';
+  function load(k) { try { return localStorage.getItem(storagePrefix + k); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(storagePrefix + k, v); } catch (e) {} }
   function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 

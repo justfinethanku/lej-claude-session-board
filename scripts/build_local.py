@@ -19,14 +19,15 @@ RELOAD = """<script id="local-autoreload">
   ['keydown', 'input', 'mousedown', 'scroll'].forEach(function (e) {
     document.addEventListener(e, function () { last = Date.now(); }, true);
   });
+  var scrollKey = 'lej-board:scroll:' + location.pathname;
   var y = 0;
-  try { y = +sessionStorage.getItem('board-scroll') || 0; } catch (e) {}
+  try { y = +sessionStorage.getItem(scrollKey) || 0; } catch (e) {}
   if (y) window.addEventListener('load', function () { window.scrollTo(0, y); });
   setInterval(function () {
     var a = document.activeElement;
     var typing = a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable);
     if (typing || Date.now() - last < 20000) return;
-    try { sessionStorage.setItem('board-scroll', String(window.scrollY)); } catch (e) {}
+    try { sessionStorage.setItem(scrollKey, String(window.scrollY)); } catch (e) {}
     location.reload();
   }, 60000);
 })();
