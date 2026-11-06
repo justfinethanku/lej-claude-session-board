@@ -41,6 +41,29 @@ Then in a Claude Code desktop session in your project folder, say something like
 | `references/coordination-rule.md` | The `CLAUDE.md` block that makes sessions report to the manager. |
 | `references/sweep.md` | The 15-minute sweep the manager schedules to keep the board true. |
 
+## Build a local board
+
+From this repository, keep the template as code and edit the data in a separate JSON file. To build the included demo with Python 3:
+
+```bash
+python3 scripts/build_local.py assets/board-template.html "LEJ Session Board.html" --data assets/demo-data.json
+```
+
+Open `LEJ Session Board.html`. For your project, replace `assets/demo-data.json` with your board data file. The builder escapes embedded JSON so strings such as `</script>` render as text. Task and backlog prose supports `<b>` and `<code>` without attributes; action links support absolute HTTP(S) URLs. See [the data schema](references/data-schema.md) for details.
+
+The HTML template is trusted executable code. The original two-argument build command still wraps an already-filled template; it does not sanitize that source.
+
+## Run the regression tests
+
+Node.js 22.12 or newer is needed only for development tests. From this repository:
+
+```bash
+npm ci --ignore-scripts
+npm test
+```
+
+The tests render the template and built page in jsdom, check HTML and URL injection cases, and verify the demo and original build command. The generated page has no npm runtime dependencies.
+
 ## Look
 
 LEJ branding: Bricolage Grotesque, Hanken Grotesk and JetBrains Mono. Terracotta on soft white, with charcoal text and a matching dark mode. Color marks only what needs you and the main actions.

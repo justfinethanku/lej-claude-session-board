@@ -213,6 +213,37 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  // Board prose supports only the documented <b>/<code> formatting. Parse in an
+  // inert template, then copy text and those elements without any attributes.
+  function formattedItem(value) {
+    var item = el('li'), source = document.createElement('template');
+    source.innerHTML = String(value == null ? '' : value);
+    function append(parent, nodes) {
+      Array.prototype.forEach.call(nodes, function (node) {
+        if (node.nodeType === 3) parent.appendChild(document.createTextNode(node.textContent));
+        else if (node.nodeType === 1) {
+          if (node.namespaceURI === 'http://www.w3.org/1999/xhtml' && (node.tagName === 'B' || node.tagName === 'CODE')) {
+            var safe = el(node.tagName.toLowerCase());
+            append(safe, node.childNodes); parent.appendChild(safe);
+          } else parent.appendChild(document.createTextNode(node.textContent));
+        }
+      });
+    }
+    append(item, source.content.childNodes);
+    return item;
+  }
+
+  function actionLink(action) {
+    var text = String(action.linkText || action.link), href;
+    try {
+      var url = new URL(action.link);
+      if (url.protocol === 'https:' || url.protocol === 'http:') href = url.href;
+    } catch (e) {}
+    var link = el(href ? 'a' : 'span'); link.textContent = text;
+    if (href) { link.href = href; link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+    return link;
+  }
+
   function copyText(text, btn, key, onDone) {
     function mark() { btn.textContent = '✓ Copied'; btn.classList.add('was'); save('copied:' + key, '1'); if (onDone) onDone(); }
     function fallback() {
@@ -331,7 +362,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     (s.actions || []).forEach(function (a) {
       var box = el('div', 'action'); box.appendChild(el('h3', null, esc(a.title)));
       if (a.why) box.appendChild(el('div', 'q-note', esc(a.why)));
-      if (a.link) box.appendChild(el('div', null, '<a href="' + esc(a.link) + '" target="_blank" rel="noopener">' + esc(a.linkText || a.link) + '</a>'));
+      if (a.link) { var linkBox = el('div'); linkBox.appendChild(actionLink(a)); box.appendChild(linkBox); }
       if ((a.steps || []).length) { var ol = el('ol'); a.steps.forEach(function (st) { ol.appendChild(el('li', null, esc(st))); }); box.appendChild(ol); }
       if (a.text) {
         box.appendChild(el('pre', null, esc(a.text)));
@@ -346,7 +377,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     // Backlog: this workstream's open to-do items, kept in its own section so nothing about it lives elsewhere.
     if ((s.backlog || []).length) {
       var bl = el('details', 'backlog'); bl.appendChild(el('summary', null, 'Backlog (' + s.backlog.length + ')'));
-      var bu = el('ul'); s.backlog.forEach(function (b) { bu.appendChild(el('li', null, b)); }); bl.appendChild(bu); body.appendChild(bl);
+      var bu = el('ul'); s.backlog.forEach(function (b) { bu.appendChild(formattedItem(b)); }); bl.appendChild(bu); body.appendChild(bl);
     }
     // Reminders: things the user asked to be reminded of. Not questions, so no options and no copy.
     if ((s.reminders || []).length) {
@@ -402,7 +433,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     grp.appendChild(gsum);
     var ul = el('ul', 'items');
     g.items.forEach(function (it) {
-      var li = el('li', null, it.text);
+      var li = formattedItem(it.text);
       if (it.question) li.appendChild(questionBlock(it.question, data.manager).box);
       if (it.starter) {
         var st = it.starter; var key = 'starter:' + st.title.split(' ')[0];
