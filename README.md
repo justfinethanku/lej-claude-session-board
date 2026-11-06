@@ -23,11 +23,39 @@ A three-minute video of the whole loop (install, make a manager, read the board,
 
 ## Install
 
+You need Git to install the skill and Python 3 to build a local page. Managing sessions also requires the Claude Desktop Code tab and the session tools listed in [the skill instructions](SKILL.md). You can build the demo without those tools. Node.js is needed only for the development checks below.
+
+For a new installation:
+
 ```bash
 git clone https://github.com/justfinethanku/lej-claude-session-board.git ~/.claude/skills/lej-session-board
 ```
 
+Check that the full skill is present:
+
+```bash
+ls ~/.claude/skills/lej-session-board/{SKILL.md,scripts/build_local.py,assets/board-template.html,references/data-schema.md}
+```
+
 Then in a Claude Code desktop session in your project folder, say something like "be the manager for this folder and make me a session board", or "which of my sessions are stale?"
+
+### Update or repair an installation
+
+For a full Git checkout, inspect local changes first. Preserve any edits before updating:
+
+```bash
+git -C ~/.claude/skills/lej-session-board status --short
+git -C ~/.claude/skills/lej-session-board pull --ff-only
+```
+
+If Git refuses the update, resolve the local changes or diverged branch before retrying. If a skills library installed only `SKILL.md`, cloning into that nonempty folder fails. Move the incomplete folder to an unused backup path, then run the install command again. For example, when `lej-session-board.backup` does not already exist:
+
+```bash
+mv ~/.claude/skills/lej-session-board ~/.claude/skills/lej-session-board.backup
+git clone https://github.com/justfinethanku/lej-claude-session-board.git ~/.claude/skills/lej-session-board
+```
+
+Keep project data outside the installed skill. Updating the skill does not update templates copied into projects or pages already generated: rebuild each board with the updated template and its existing JSON. Keep `boardId` (or `projectFolder` when no `boardId` is set) stable so the browser can reuse its saved drafts. See [browser state and older-template compatibility](references/data-schema.md#what-the-viewers-browser-keeps) before updating an older board.
 
 ## What's inside
 
@@ -51,7 +79,39 @@ python3 scripts/build_local.py assets/board-template.html "LEJ Session Board.htm
 
 Open `LEJ Session Board.html`. For your project, replace `assets/demo-data.json` with your board data file. The builder escapes embedded JSON so strings such as `</script>` render as text. Task and backlog prose supports `<b>` and `<code>` without attributes; action links support absolute HTTP(S) URLs. See [the data schema](references/data-schema.md) for details.
 
+### Build from your project folder
+
+The repository-relative command above assumes you are in the skill checkout. From your own project folder, use the installed skill paths instead. For a new board, copy the demo once as a starting point:
+
+```bash
+SKILL_DIR="$HOME/.claude/skills/lej-session-board"
+mkdir -p .session-board
+cp "$SKILL_DIR/assets/demo-data.json" .session-board/board-data.json
+```
+
+Use your actual skill directory if you installed elsewhere. For an existing board, keep its JSON instead of copying the demo over it. Edit `.session-board/board-data.json` for your project, including its identity, sessions and questions. Set `updated` and `updatedISO` to the time you actually checked the sessions; the builder preserves those fields and does not refresh them. The demo's historical timestamp intentionally shows an out-of-date board.
+
+Build or rebuild from that same project folder:
+
+```bash
+python3 "$SKILL_DIR/scripts/build_local.py" "$SKILL_DIR/assets/board-template.html" "LEJ Session Board.html" --data .session-board/board-data.json
+```
+
+The command prints `wrote LEJ Session Board.html`. Open that file in your browser (on macOS, `open "LEJ Session Board.html"`). The generated page displays data; it does not read sessions or send answers itself. The manager updates the JSON and rebuilds; you copy answers into sessions. Browser edits stay in that browser's storage and do not write back to the JSON.
+
+Auto-reload checks every 60 seconds. It waits while a text field has focus or an interaction happened in the last 20 seconds. If an update does not appear, click outside the field and wait for the next interval, or reload manually after saving your reply. Fonts load from Google Fonts when available, with system-font fallbacks.
+
 The HTML template is trusted executable code. The original two-argument build command still wraps an already-filled template; it does not sanitize that source.
+
+### Troubleshoot a local build
+
+| Symptom | Check and recovery |
+|---|---|
+| `can't open file ... scripts/build_local.py` | You ran a repository-relative command from your project. Use the installed paths above. |
+| `FileNotFoundError` | Check the template and JSON paths and create the output's parent directory. The builder does not create directories. |
+| `JSONDecodeError` | Run `python3 -m json.tool .session-board/board-data.json` to locate the syntax error, correct it, then rebuild. JSON parse errors happen before the output is written. |
+| `Template must contain exactly one script with id="board-data"` | Use the complete `assets/board-template.html` from the installed skill. Pass the JSON with `--data`. |
+| The page says `Out of date` immediately | Check `updatedISO` in the JSON. Rebuild with a real check time after the manager checks the sessions. |
 
 ## Run the regression tests
 
