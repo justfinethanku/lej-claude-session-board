@@ -1,6 +1,6 @@
 # Board data schema
 
-The board page renders from the JSON in `<script type="application/json" id="board-data">`. Edit this block and rebuild the local page; the markup doesn't change.
+The board page renders from the JSON in `<script type="application/json" id="board-data">`. Keep the data in `board-data.json` and rebuild with `scripts/build_local.py --data board-data.json`; the markup doesn't change. The builder encodes `<` as `\u003c` so text such as `</script>` stays inside the JSON block. The HTML template itself is trusted executable code. The legacy two-argument command wraps an already-filled template without sanitizing its source.
 
 ```json
 {
@@ -33,12 +33,14 @@ The board page renders from the JSON in `<script type="application/json" id="boa
 | `tone` | `"needs"` (terracotta, waiting on the user), `"done"` (green), or `""`. |
 | `where` | Two to four plain lines on where it stands. Plain text, escaped on render. |
 | `questions` | Zero or more `Question`s. The page counts them itself: a total in the header, and a count at the top of each open section. |
-| `actions` | Optional. Steps only the user can do (a key, a setting, a click, SQL): `[{ "id", "title", "why"?, "link"?, "linkText"?, "steps": [..], "text"?, "textTo"? }]`. Each renders inside the section with its link, numbered steps, any text to copy, and a **Copy "done"** for the manager. Put everything needed to do it here, so the user never goes to another section. |
-| `backlog` | Optional. The workstream's open to-do items (trusted HTML strings), shown as a collapsed "Backlog (n)" list in the section. Use it in place of a separate to-do group per workstream. |
+| `actions` | Optional. Steps only the user can do (a key, a setting, a click, SQL): `[{ "id", "title", "why"?, "link"?, "linkText"?, "steps": [..], "text"?, "textTo"? }]`. Each renders inside the section with its HTTP(S) link, numbered steps, any text to copy, and a **Copy "done"** for the manager. Put everything needed to do it here, so the user never goes to another section. |
+| `backlog` | Optional. The workstream's open to-do items (strings supporting `<b>` and `<code>` without attributes), shown as a collapsed "Backlog (n)" list in the section. Use it in place of a separate to-do group per workstream. |
 | `reminders` | Optional. Things the user asked to be reminded of: `[{ "text", "when"? }]`. They render as a Reminders list inside the section, with no options and no Copy, because a reminder isn't a question. The manager's entry shows when it holds reminders, even with no questions. |
 | `pastes` | Optional. Ready-made text the user pastes somewhere else, such as a prompt for another machine: `{ "id", "title", "to", "note"?, "text" }`. It shows as an editable block, and Copy puts the text alone, with no header. |
 
 Sections start collapsed to the title and `need` line, and open on click. The page orders them: `urgent` first, then sessions with questions, pastes or `tone: "needs"`, then the rest, keeping the data's order within each group. A section the viewer opens stays open across reloads.
+
+Action links must be absolute `http://` or `https://` URLs. Other schemes and relative URLs display as text. Links open in a new tab with `noopener noreferrer`.
 
 ## Question
 
@@ -55,7 +57,7 @@ Sections start collapsed to the title and `need` line, and open on click. The pa
 | Field | Meaning |
 |---|---|
 | `title` | For example "Your call", "Other people", "Claude builds", "Later". |
-| `items` | `{ "text", "question"?, "starter"? }`. `text` may hold `<b>` and `<code>` and is trusted HTML, so write it yourself. Give every item in the user's-call group a `question` (same shape as above, `to` the manager): the page renders it under the item with options, Write your own answer and Copy, and Copy's first line is the manager's name. |
+| `items` | `{ "text", "question"?, "starter"? }`. `text` supports `<b>` and `<code>` without attributes. Other elements render as plain text content; links belong in `actions`. Give every item in the user's-call group a `question` (same shape as above, `to` the manager): the page renders it under the item with options, Write your own answer and Copy, and Copy's first line is the manager's name. |
 
 Each group starts collapsed to its title and item count (plus how many starter prompts it holds), and remembers being opened.
 
