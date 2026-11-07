@@ -101,7 +101,10 @@ summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14
 summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
 .starter { display: grid; gap: 10px; margin-top: 10px; }
 .starter-title { font: 600 16px var(--font-mono); }
-.refresh-control { width: fit-content; font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--field-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.draft-feedback { min-width: 0; overflow-wrap: anywhere; }
+.draft-status { margin: 0; color: var(--accent); font-size: 14px; }
+.retry-save { margin-top: 8px; }
+.refresh-control, .retry-save { width: fit-content; font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--field-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 </style>
 
@@ -217,7 +220,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   var identity = data.boardId ? ['id', data.boardId] : data.projectFolder ? ['project', data.projectFolder] : ['page', location.pathname];
   var storagePrefix = 'lej-board:' + JSON.stringify(identity) + ':';
   function load(k) { try { return localStorage.getItem(storagePrefix + k); } catch (e) { return null; } }
-  function save(k, v) { try { localStorage.setItem(storagePrefix + k, v); } catch (e) {} }
+  function save(k, v) { try { localStorage.setItem(storagePrefix + k, v); return true; } catch (e) { return false; } }
   // A question is one saved value: selection, visible reply and custom draft
   // must come from the same edit. Keep a tab's working copy in memory so an
   // option switch never imports another tab's custom draft mid-conversation.
@@ -237,10 +240,43 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     return { version: 1, pick: idx, text: text !== null ? text : opts[idx].text,
       own: own !== null ? own : (opts[idx].own && text !== null ? text : '') };
   }
-  function saveAnswer(q, answer) { save('answer:' + q.id, JSON.stringify(answer)); }
+  function saveAnswer(q, answer) { return save('answer:' + q.id, JSON.stringify(answer)); }
   // Most board content is plain text: avoid escaping it and invoking the HTML
   // parser for every label. Only formattedItem parses the documented rich prose.
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (arguments.length > 2) n.textContent = String(text); return n; }
+
+  // Draft failures need their own visible/live feedback: a clipboard success
+  // does not mean the text survived a browser save. Retry uses the current
+  // working value, while each unsaved field independently holds timed refresh.
+  function draftFeedback(field, label, write, group) {
+    var wrap = el('div', 'draft-feedback');
+    var status = el('p', 'draft-status'); status.id = field.id + '-save-status';
+    status.setAttribute('role', 'status'); status.setAttribute('aria-atomic', 'true');
+    var retry = el('button', 'retry-save', 'Retry saving'); retry.type = 'button'; retry.hidden = true;
+    retry.setAttribute('aria-label', 'Retry saving ' + label);
+    function describe(node) {
+      node.setAttribute('aria-describedby', ((node.getAttribute('aria-describedby') || '') + ' ' + status.id).trim());
+    }
+    describe(field); if (group) describe(group);
+    function message(text) { if (status.textContent !== text) status.textContent = text; }
+    function persist() {
+      if (write()) {
+        if (field.hasAttribute('data-unsaved-draft')) {
+          field.removeAttribute('data-unsaved-draft');
+          message('Saved: ' + label + '.');
+          // Removing the focused retry must not strand keyboard focus on body.
+          if (document.activeElement === retry) field.focus({ preventScroll: true });
+          retry.hidden = true;
+        }
+      } else {
+        field.setAttribute('data-unsaved-draft', ''); retry.hidden = false;
+        message('Not saved: ' + label + '. Copy this text before reloading or closing the tab. Retry saving when browser storage is available.');
+      }
+    }
+    retry.addEventListener('click', persist);
+    wrap.appendChild(status); wrap.appendChild(retry);
+    return { box: wrap, save: persist };
+  }
 
   // Board prose supports only the documented <b>/<code> formatting. Parse in an
   // inert template, then copy text and those elements without any attributes.
@@ -367,7 +403,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
         answer.pick = i; answer.text = o.own ? answer.own : o.text;
         ta.value = answer.text;
         ta.placeholder = o.own ? 'Write your own answer' : '';
-        saveAnswer(q, answer);
+        draft.save();
         resetCopy(btn, 'q:' + q.id);
       });
       radios.push(r); fs.appendChild(lab);
@@ -379,10 +415,12 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     ta.addEventListener('input', function () {
       answer.text = ta.value;
       if (opts[answer.pick].own) answer.own = ta.value;
-      saveAnswer(q, answer);
+      draft.save();
       resetCopy(btn, 'q:' + q.id);
     });
     box.appendChild(fs); box.appendChild(ta);
+    var draft = draftFeedback(ta, 'Reply to ' + q.title, function () { return saveAnswer(q, answer); }, fs);
+    box.appendChild(draft.box);
     var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + q.to));
     function payload() { return withReport(header, header + '\nRe: ' + q.title + '\n' + ta.value.trim()); }
     var btn = copyButton('q:' + q.id, 'Copy reply to ' + q.title + ' for ' + header, payload);
@@ -486,8 +524,10 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       var key = 'paste:' + pp.id;
       var ta = el('textarea', 'prompt'); ta.id = 'paste-' + pp.id; ta.setAttribute('aria-label', pp.title);
       var saved = load('text:' + key); ta.value = saved !== null ? saved : pp.text;
-      ta.addEventListener('input', function () { save('text:' + key, ta.value); resetCopy(btn, key); });
+      ta.addEventListener('input', function () { draft.save(); resetCopy(btn, key); });
       box.appendChild(ta);
+      var draft = draftFeedback(ta, 'Handoff ' + pp.title, function () { return save('text:' + key, ta.value); });
+      box.appendChild(draft.box);
       var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + pp.to));
       var btn = copyButton(key, 'Copy handoff ' + pp.title + ' to ' + pp.to, function () { return ta.value.trim(); });
       btn.addEventListener('click', function () { copyText(ta.value.trim(), btn, key); });
@@ -521,9 +561,11 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
         var ta = el('textarea', 'prompt'); ta.id = 'prompt-' + key.replace(':', '-'); ta.setAttribute('aria-label', 'Starter prompt ' + st.title);
         var saved = load('text:' + key); ta.value = saved !== null ? saved : st.prompt;
         ta.addEventListener('input', function () {
-          save('text:' + key, ta.value); resetCopy(btn, key); doneMark.textContent = '';
+          draft.save(); resetCopy(btn, key); doneMark.textContent = '';
         });
         wrap.appendChild(ta);
+        var draft = draftFeedback(ta, 'Starter prompt ' + st.title, function () { return save('text:' + key, ta.value); });
+        wrap.appendChild(draft.box);
         var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into a new session in ' + data.projectFolder + ', named ' + st.title));
         function payload() { return st.title + '\n\n' + ta.value.trim(); }
         var btn = copyButton(key, 'Copy starter prompt ' + st.title, payload);

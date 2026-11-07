@@ -34,8 +34,8 @@ test('question groups and notes are associated, and each copy control names its 
     const field = fieldset.parentElement.querySelector('textarea');
     const note = fieldset.parentElement.querySelector('.q-note');
     if (note) {
-      assert.equal(d.getElementById(fieldset.getAttribute('aria-describedby')), note);
-      assert.equal(d.getElementById(field.getAttribute('aria-describedby')), note);
+      assert.ok(fieldset.getAttribute('aria-describedby').split(/\s+/).includes(note.id));
+      assert.ok(field.getAttribute('aria-describedby').split(/\s+/).includes(note.id));
     }
   }
   const names = [...d.querySelectorAll('button.copy')].map(b => b.getAttribute('aria-label'));
