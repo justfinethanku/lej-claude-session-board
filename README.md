@@ -116,6 +116,8 @@ The builder checks `--data` for the renderer's object, array and text fields, in
 | `Template must contain exactly one script with id="board-data"` | Use the complete `assets/board-template.html` from the installed skill. Pass the JSON with `--data`. |
 | The page says `Out of date` immediately | Check `updatedISO` in the JSON. Rebuild with a real check time after the manager checks the sessions. |
 
+For conflicting tabs, replies that revert after reload, malformed saved state or drafts hidden by a changed board identity, follow [Recover board drafts and rebuilds](references/recovery.md). Preserve each tab's visible text before reloading; the project JSON and generated HTML do not contain browser edits.
+
 ## Run the regression tests
 
 Node.js 22.12 or newer is needed only for development tests. From this repository:
