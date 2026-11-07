@@ -218,6 +218,26 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   var storagePrefix = 'lej-board:' + JSON.stringify(identity) + ':';
   function load(k) { try { return localStorage.getItem(storagePrefix + k); } catch (e) { return null; } }
   function save(k, v) { try { localStorage.setItem(storagePrefix + k, v); } catch (e) {} }
+  // A question is one saved value: selection, visible reply and custom draft
+  // must come from the same edit. Keep a tab's working copy in memory so an
+  // option switch never imports another tab's custom draft mid-conversation.
+  function loadAnswer(q, opts) {
+    try {
+      var answer = JSON.parse(load('answer:' + q.id));
+      if (answer && answer.version === 1 && Number.isInteger(answer.pick) &&
+          answer.pick >= 0 && answer.pick < opts.length &&
+          typeof answer.text === 'string' && typeof answer.own === 'string') return answer;
+    } catch (e) {}
+    // Read old scoped keys without rewriting them until the viewer edits.
+    // Reject numeric coercions such as an empty string selecting option zero.
+    var pick = load('pick:' + q.id);
+    var idx = pick !== null && /^(0|[1-9][0-9]*)$/.test(pick) && +pick < opts.length ? +pick :
+      Math.max(0, q.options.findIndex(function (o) { return o.rec; }));
+    var text = load('text:' + q.id), own = load('own:' + q.id);
+    return { version: 1, pick: idx, text: text !== null ? text : opts[idx].text,
+      own: own !== null ? own : (opts[idx].own && text !== null ? text : '') };
+  }
+  function saveAnswer(q, answer) { save('answer:' + q.id, JSON.stringify(answer)); }
   // Most board content is plain text: avoid escaping it and invoking the HTML
   // parser for every label. Only formattedItem parses the documented rich prose.
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (arguments.length > 2) n.textContent = String(text); return n; }
@@ -333,7 +353,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     var ta = el('textarea'); ta.setAttribute('aria-label', 'Reply to: ' + q.title); ta.id = 'reply-' + q.id;
     if (q.note) ta.setAttribute('aria-describedby', note.id);
     var opts = q.options.concat([{ label: 'Write your own answer', text: '', own: true }]);
-    var radios = [];
+    var answer = loadAnswer(q, opts), radios = [];
     opts.forEach(function (o, i) {
       var lab = el('label'); var r = el('input'); r.type = 'radio'; r.name = 'opt-' + q.id; r.id = 'opt-' + q.id + '-' + i;
       lab.appendChild(r);
@@ -341,20 +361,22 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       if (o.rec) labelText.appendChild(el('span', 'rec', 'Recommended'));
       lab.appendChild(labelText);
       r.addEventListener('change', function () {
-        ta.value = o.own ? (load('own:' + q.id) || '') : o.text;
+        answer.pick = i; answer.text = o.own ? answer.own : o.text;
+        ta.value = answer.text;
         ta.placeholder = o.own ? 'Write your own answer' : '';
-        save('pick:' + q.id, String(i)); save('text:' + q.id, ta.value);
+        saveAnswer(q, answer);
         resetCopy(btn, 'q:' + q.id);
       });
       radios.push(r); fs.appendChild(lab);
     });
-    var pick = load('pick:' + q.id); var idx = pick !== null && opts[+pick] ? +pick : Math.max(0, q.options.findIndex(function (o) { return o.rec; }));
+    var idx = answer.pick;
     radios[idx].checked = true;
     if (opts[idx].own) ta.placeholder = 'Write your own answer';
-    var savedText = load('text:' + q.id); ta.value = savedText !== null ? savedText : opts[idx].text;
+    ta.value = answer.text;
     ta.addEventListener('input', function () {
-      save('text:' + q.id, ta.value);
-      if (radios[radios.length - 1].checked) save('own:' + q.id, ta.value);
+      answer.text = ta.value;
+      if (opts[answer.pick].own) answer.own = ta.value;
+      saveAnswer(q, answer);
       resetCopy(btn, 'q:' + q.id);
     });
     box.appendChild(fs); box.appendChild(ta);
