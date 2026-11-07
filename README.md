@@ -103,7 +103,7 @@ Auto-reload checks every 60 seconds. Use **Pause automatic refresh** in the head
 
 The HTML template is trusted executable code. The original two-argument build command still wraps an already-filled template; it does not sanitize that source.
 
-The builder writes a temporary page beside the output and replaces the output only after that write succeeds. A JSON parse, template or write failure leaves the previous page intact. This also applies when rebuilding the output for a different board identity; browser drafts remain scoped by the identity in the page. A successful rebuild preserves an existing output's file permissions.
+The builder checks `--data` for the renderer's object, array and text fields, including unique question IDs, before writing a temporary page beside the output. It replaces the output only after that write succeeds. A data validation, JSON parse, template or write failure leaves the previous page intact. This also applies when rebuilding the output for a different board identity; browser drafts remain scoped by the identity in the page. A successful rebuild preserves an existing output's file permissions.
 
 ### Troubleshoot a local build
 
@@ -112,6 +112,7 @@ The builder writes a temporary page beside the output and replaces the output on
 | `can't open file ... scripts/build_local.py` | You ran a repository-relative command from your project. Use the installed paths above. |
 | `FileNotFoundError` | Check the template and JSON paths and create the output's parent directory. The builder does not create directories. |
 | `JSONDecodeError` | Run `python3 -m json.tool .session-board/board-data.json` to locate the syntax error, correct it, then rebuild. JSON parse errors happen before the output is written. |
+| `Invalid board data at $.…` | Correct the named field using [the data schema](references/data-schema.md), then rebuild. Valid JSON can still have the wrong structure or duplicate question IDs. The existing output stays intact; the diagnostic names the field without printing its value. |
 | `Template must contain exactly one script with id="board-data"` | Use the complete `assets/board-template.html` from the installed skill. Pass the JSON with `--data`. |
 | The page says `Out of date` immediately | Check `updatedISO` in the JSON. Rebuild with a real check time after the manager checks the sessions. |
 

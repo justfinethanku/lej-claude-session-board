@@ -53,6 +53,74 @@ RELOAD = """<script id="local-autoreload">
 </script>"""
 
 
+def validate_data(data):
+    """Check renderer inputs before replacing a usable page; keep values private."""
+    question_ids = set()
+
+    def obj(value, path):
+        if not isinstance(value, dict):
+            raise ValueError(f"{path}: expected an object")
+
+    def strings(value, path, required=(), optional=()):
+        obj(value, path)
+        for key in required:
+            if not isinstance(value.get(key), str) or not value[key].strip():
+                raise ValueError(f"{path}.{key}: expected a nonempty string")
+        for key in optional:
+            if value.get(key) is not None and not isinstance(value[key], str):
+                raise ValueError(f"{path}.{key}: expected a string")
+
+    def items(value, key, path, required=False):
+        found = value.get(key)
+        if found is None and not required:
+            return []
+        if not isinstance(found, list):
+            raise ValueError(f"{path}.{key}: expected an array")
+        return [(item, f"{path}.{key}[{i}]") for i, item in enumerate(found)]
+
+    def question(value, path):
+        strings(value, path, ("id", "title", "to"), ("note",))
+        if value["id"] in question_ids:
+            raise ValueError(f"{path}.id: duplicate question id")
+        question_ids.add(value["id"])
+        for option, opath in items(value, "options", path, required=True):
+            # Empty reply text is useful; do not enforce a fixed option count.
+            strings(option, opath, ("label",), ("text",))
+            if not isinstance(option.get("text"), str):
+                raise ValueError(f"{opath}.text: expected a string")
+
+    strings(data, "$", ("manager",), ("boardId", "projectFolder", "updated", "updatedISO", "overview", "todoIntro", "reportBack"))
+    for session, path in items(data, "sessions", "$", required=True):
+        strings(session, path, ("id", "name"), ("state", "need", "tone"))
+        for key in ("where", "backlog"):
+            for line, lpath in items(session, key, path):
+                if not isinstance(line, str):
+                    raise ValueError(f"{lpath}: expected a string")
+        for value, qpath in items(session, "questions", path):
+            question(value, qpath)
+        for action, apath in items(session, "actions", path):
+            strings(action, apath, ("id", "title"), ("why", "link", "linkText", "text", "textTo"))
+            for step, spath in items(action, "steps", apath):
+                if not isinstance(step, str):
+                    raise ValueError(f"{spath}: expected a string")
+        for paste, ppath in items(session, "pastes", path):
+            strings(paste, ppath, ("id", "title", "to"), ("note", "text"))
+            if not isinstance(paste.get("text"), str):
+                raise ValueError(f"{ppath}.text: expected a string")
+        for reminder, rpath in items(session, "reminders", path):
+            strings(reminder, rpath, (), ("text", "when"))
+    for group, path in items(data, "groups", "$", required=True):
+        strings(group, path, ("title",))
+        for item, ipath in items(group, "items", path, required=True):
+            strings(item, ipath, (), ("text",))
+            if item.get("question") is not None:
+                question(item["question"], ipath + ".question")
+            if item.get("starter") is not None:
+                strings(item["starter"], ipath + ".starter", ("title",), ("prompt",))
+                if not isinstance(item["starter"].get("prompt"), str):
+                    raise ValueError(f"{ipath}.starter.prompt: expected a string")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("src", help="Trusted board HTML template")
@@ -62,6 +130,10 @@ def main():
     body = Path(args.src).read_text(encoding="utf-8")
     if args.data:
         data = json.loads(args.data.read_text(encoding="utf-8"))
+        try:
+            validate_data(data)
+        except ValueError as error:
+            parser.error(f"Invalid board data at {error}")
         # JSON quoting alone does not stop the HTML parser recognizing </script>.
         encoded = json.dumps(data, ensure_ascii=True).replace("<", "\\u003c")
         block = re.compile(r'(<script\b[^>]*\bid="board-data"[^>]*>)[\s\S]*?(</script\s*>)', re.I)
