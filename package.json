@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "node --test --test-concurrency=2 tests/*.test.cjs",
-    "benchmark": "node scripts/benchmark_render.cjs"
+    "benchmark": "node scripts/benchmark_render.cjs",
+    "benchmark:restore": "node scripts/benchmark_restore.cjs"
   },
   "engines": { "node": ">=22.12.0" },
   "devDependencies": { "jsdom": "31.0.0" }

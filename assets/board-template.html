@@ -314,7 +314,10 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
   function copyButton(key, label, payload) {
     var b = el('button', 'copy', 'Copy'); b.type = 'button'; b.copyLabel = label; b.setAttribute('aria-label', label);
     b.copyPayload = payload;
-    if (load('copied:' + key) === receipt(payload())) markCopied(b);
+    // A missing or edit-cleared receipt cannot match a serialized payload.
+    // Avoid assembling and serializing long replies/batches in those cases.
+    var copied = load('copied:' + key);
+    if (copied && copied === receipt(payload())) markCopied(b);
     return b;
   }
 
