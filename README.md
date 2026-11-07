@@ -103,6 +103,8 @@ Auto-reload checks every 60 seconds. Use **Pause automatic refresh** in the head
 
 The HTML template is trusted executable code. The original two-argument build command still wraps an already-filled template; it does not sanitize that source.
 
+The builder writes a temporary page beside the output and replaces the output only after that write succeeds. A JSON parse, template or write failure leaves the previous page intact. This also applies when rebuilding the output for a different board identity; browser drafts remain scoped by the identity in the page. A successful rebuild preserves an existing output's file permissions.
+
 ### Troubleshoot a local build
 
 | Symptom | Check and recovery |
