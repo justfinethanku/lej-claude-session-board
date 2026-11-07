@@ -2,6 +2,8 @@
 
 The board page renders from the JSON in `<script type="application/json" id="board-data">`. Keep the data in `board-data.json` and rebuild with `scripts/build_local.py --data board-data.json`; the markup doesn't change. The builder encodes `<` as `\u003c` so text such as `</script>` stays inside the JSON block. The HTML template itself is trusted executable code. The legacy two-argument command wraps an already-filled template without sanitizing its source.
 
+With `--data`, the builder validates the renderer's object, array and text fields before publication. The root must be an object with a nonempty `manager` string and `sessions` and `groups` arrays. Question IDs must be unique across sessions and group items. Invalid data exits with status 2 and a field path, preserving any existing output. Correct the data and repeat the same build command. Unknown extra fields remain allowed; optional collections can be omitted, empty or `null`, and no fixed option count is enforced. This check does not validate the meaning of replies or apply to JSON manually embedded through the legacy two-argument command.
+
 ```json
 {
   "updated": "Monday, Oct 5, 2026, 4:30 pm ET (from `date`, never estimated)",
