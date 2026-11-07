@@ -11,7 +11,7 @@ Use this procedure when tabs disagree, a reply disappears after reload, or a reb
 | Browser local storage | Saved picks, replies, custom drafts, edited prompts, open sections and copy receipts for one browser origin and board identity. |
 | An open tab | Its working reply and custom draft. Other tabs' edits do not synchronize into these fields. |
 
-The page has no draft import/export button, conflict dialog or automatic merge. A question saves its selection, visible reply and custom draft together; the last successful complete save wins. If storage rejects a write, the visible edit remains in that tab, with no save-error indicator. A **Copied** mark records a successful copy of that exact payload; it does not confirm a saved draft, a session receiving an answer or the current clipboard contents.
+The page has no draft import/export button, conflict dialog or automatic merge. A question saves its selection, visible reply and custom draft together; the last successful complete save wins. If storage rejects a draft write, a visible **Not saved** message identifies the field, announces the failure without moving focus, and offers **Retry saving**. The visible edit remains in that tab; automatic refresh waits until every failed draft save recovers. Manual reload and closing the tab can still discard unsaved edits. A **Copied** mark records a successful copy of that exact payload; it does not confirm a saved draft, a session receiving an answer or the current clipboard contents.
 
 ## Preserve replies before reloading
 
@@ -27,8 +27,9 @@ Rebuilding the page or copying its HTML to another machine does not back up brow
 1. Preserve all versions using the preceding procedure, then compare their reply and custom-draft text in your editor. Choose or combine the text you want to keep.
 2. Close the other tabs after preserving them. In the remaining paused tab, reload to see the last successfully saved answer. There is no conflict warning or revision history to choose from.
 3. For each recovered reply, select **Write your own answer** and paste the chosen text into its reply field. Typing or pasting in the field attempts a complete question save. Merely copying an answer does not save it.
-4. Keep your text backup, reload the remaining tab, and compare its reply and selected option with your chosen answer. If it reverts, preserve the still-open working fields again and investigate browser storage availability or quota before retrying. The page does not report the storage error or retry it for you.
-5. Copy the verified answer when ready to paste it into its session. Resume automatic refresh when recovery is complete.
+4. If **Not saved** appears beside a field, keep your text backup and investigate browser storage availability or quota. The warning remains even after a successful **Copy**. Once storage is available, use that field’s **Retry saving** button to save its current working value without retyping, or edit the field to attempt another save. **Saved** confirms that write succeeded; it is not a conflict check or a durable backup. A successful keyboard retry returns focus to its text field. Recover every affected field before reloading.
+5. Keep your text backup, reload the remaining tab, and compare its reply and selected option with your chosen answer. If it reverts, use the backup to restore the text and repeat the save checks.
+6. Copy the verified answer when ready to paste it into its session. Resume automatic refresh when recovery is complete.
 
 ## Inspect malformed saved state
 

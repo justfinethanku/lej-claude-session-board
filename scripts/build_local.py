@@ -6,7 +6,7 @@
 <board.html> is the filled template (the same fragment the Artifact tool publishes). The output adds the
 doctype, charset and viewport, plus a script that reloads the page every 60 seconds so the open tab picks up
 each rewrite. A header button pauses automatic refresh for this tab/page. It will not reload while a control
-has focus or within 20 seconds of interaction, and it keeps your scroll position. Edited replies and "Copied" marks survive, since the page keeps them
+has focus, a draft save has failed, or within 20 seconds of interaction, and it keeps your scroll position. Edited replies and "Copied" marks survive, since the page keeps them
 in localStorage.
 """
 import argparse
@@ -45,7 +45,7 @@ RELOAD = """<script id="local-autoreload">
   setInterval(function () {
     var a = document.activeElement;
     var interacting = a && (a.matches('textarea, input, button, summary, a[href], select, [tabindex]') || a.isContentEditable);
-    if (paused || interacting || Date.now() - last < 20000) return;
+    if (paused || interacting || document.querySelector('[data-unsaved-draft]') || Date.now() - last < 20000) return;
     try { sessionStorage.setItem(scrollKey, String(window.scrollY)); } catch (e) {}
     location.reload();
   }, 60000);
