@@ -11,8 +11,11 @@ in localStorage.
 """
 import argparse
 import json
+import os
 from pathlib import Path
 import re
+import stat
+import tempfile
 
 RELOAD = """<script id="local-autoreload">
 (function () {
@@ -70,8 +73,15 @@ def main():
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body>\n'
         + body + "\n" + RELOAD + "\n</body>\n</html>\n"
     )
-    with open(args.dst, "w", encoding="utf-8") as f:
-        f.write(page)
+    dst = Path(args.dst)
+    # Build beside the destination so replacement is atomic on the same
+    # filesystem. A partial write must not truncate the last usable board.
+    with tempfile.TemporaryDirectory(dir=dst.parent, prefix="." + dst.name + ".") as staging:
+        pending = Path(staging) / "board.html"
+        pending.write_text(page, encoding="utf-8")
+        if dst.exists():
+            pending.chmod(stat.S_IMODE(dst.stat().st_mode))
+        os.replace(pending, dst)
     print("wrote", args.dst)
 
 

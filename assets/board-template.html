@@ -271,7 +271,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     function current() { return version === (btn.copyVersion || 0); }
     function mark() {
       if (!current()) return;
-      markCopied(btn); save('copied:' + key, '1'); announceCopy(btn, 'copied to clipboard.'); if (onDone) onDone();
+      markCopied(btn); save('copied:' + key, receipt(text)); announceCopy(btn, 'copied to clipboard.'); if (onDone) onDone();
     }
     function fallback() {
       if (!current()) return;
@@ -288,9 +288,13 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       else fallback();
     } catch (e) { fallback(); }
   }
-  function copyButton(key, label) {
+  // A receipt describes the copied payload, not just a key. Another tab can
+  // finish an old copy after a newer draft has been saved under the same id.
+  function receipt(text) { return JSON.stringify([1, text]); }
+  function copyButton(key, label, payload) {
     var b = el('button', 'copy', 'Copy'); b.type = 'button'; b.copyLabel = label; b.setAttribute('aria-label', label);
-    if (load('copied:' + key)) markCopied(b);
+    b.copyPayload = payload;
+    if (load('copied:' + key) === receipt(payload())) markCopied(b);
     return b;
   }
 
@@ -355,8 +359,9 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
     });
     box.appendChild(fs); box.appendChild(ta);
     var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + q.to));
-    var btn = copyButton('q:' + q.id, 'Copy reply to ' + q.title + ' for ' + header);
-    btn.addEventListener('click', function () { copyText(withReport(header, header + '\nRe: ' + q.title + '\n' + ta.value.trim()), btn, 'q:' + q.id); });
+    function payload() { return withReport(header, header + '\nRe: ' + q.title + '\n' + ta.value.trim()); }
+    var btn = copyButton('q:' + q.id, 'Copy reply to ' + q.title + ' for ' + header, payload);
+    btn.addEventListener('click', function () { copyText(payload(), btn, 'q:' + q.id); });
     act.appendChild(btn); box.appendChild(act);
     return { box: box, q: q, ta: ta, btn: btn };
   }
@@ -402,10 +407,10 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       if (a.text) {
         box.appendChild(el('pre', null, a.text));
         var ca = el('div', 'actions'); ca.appendChild(el('span', 'to', a.textTo || 'Copy this'));
-        var cb = copyButton('act-text:' + a.id, 'Copy text for ' + a.title + ' in ' + s.name); cb.addEventListener('click', function () { copyText(a.text, cb, 'act-text:' + a.id); }); ca.appendChild(cb); box.appendChild(ca);
+        var cb = copyButton('act-text:' + a.id, 'Copy text for ' + a.title + ' in ' + s.name, function () { return a.text; }); cb.addEventListener('click', function () { copyText(a.text, cb, 'act-text:' + a.id); }); ca.appendChild(cb); box.appendChild(ca);
       }
       var da = el('div', 'actions'); da.appendChild(el('span', 'to', 'When it\'s done, paste into ' + data.manager));
-      var db = copyButton('act-done:' + a.id, 'Copy "done" confirmation for ' + a.title + ' to ' + data.manager); db.textContent = db.classList.contains('was') ? '✓ Copied' : 'Copy "done"';
+      var db = copyButton('act-done:' + a.id, 'Copy "done" confirmation for ' + a.title + ' to ' + data.manager, function () { return data.manager + '\nDone: ' + a.title; }); db.textContent = db.classList.contains('was') ? '✓ Copied' : 'Copy "done"';
       db.addEventListener('click', function () { copyText(data.manager + '\nDone: ' + a.title, db, 'act-done:' + a.id); }); da.appendChild(db); box.appendChild(da);
       body.appendChild(box);
     });
@@ -433,16 +438,18 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       var allKey = 'all:' + answers.map(function (a) { return a.q.id; }).join('+');
       var allAct = el('div', 'actions copy-all');
       allAct.appendChild(el('span', 'to', 'All ' + answers.length + ' answers in one paste'));
-      var allBtn = copyButton(allKey, 'Copy all answers for ' + s.name); allBtn.textContent = allBtn.classList.contains('was') ? '✓ Copied' : 'Copy all answers';
+      function allPayload() {
+        return withReport(s.name, s.name + '\n\n' + answers.map(function (a) { return 'Re: ' + a.q.title + '\n' + a.ta.value.trim(); }).join('\n\n'));
+      }
+      var allBtn = copyButton(allKey, 'Copy all answers for ' + s.name, allPayload); allBtn.textContent = allBtn.classList.contains('was') ? '✓ Copied' : 'Copy all answers';
       answers.forEach(function (a) {
         function changed() { resetCopy(allBtn, allKey, 'Copy all answers'); }
         a.box.addEventListener('input', changed, true);
         a.box.addEventListener('change', changed, true);
       });
       allBtn.addEventListener('click', function () {
-        var text = withReport(s.name, s.name + '\n\n' + answers.map(function (a) { return 'Re: ' + a.q.title + '\n' + a.ta.value.trim(); }).join('\n\n'));
-        copyText(text, allBtn, allKey, function () {
-          answers.forEach(function (a) { markCopied(a.btn); save('copied:q:' + a.q.id, '1'); });
+        copyText(allPayload(), allBtn, allKey, function () {
+          answers.forEach(function (a) { markCopied(a.btn); save('copied:q:' + a.q.id, receipt(a.btn.copyPayload())); });
         });
       });
       allAct.appendChild(allBtn); body.appendChild(allAct);
@@ -457,7 +464,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       ta.addEventListener('input', function () { save('text:' + key, ta.value); resetCopy(btn, key); });
       box.appendChild(ta);
       var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into ' + pp.to));
-      var btn = copyButton(key, 'Copy handoff ' + pp.title + ' to ' + pp.to);
+      var btn = copyButton(key, 'Copy handoff ' + pp.title + ' to ' + pp.to, function () { return ta.value.trim(); });
       btn.addEventListener('click', function () { copyText(ta.value.trim(), btn, key); });
       act.appendChild(btn); box.appendChild(act); body.appendChild(box);
     });
@@ -482,7 +489,7 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
       if (it.starter) {
         var st = it.starter; var key = 'starter:' + st.title.split(' ')[0];
         var det = el('details'); var sum = el('summary', null, st.title);
-        var doneMark = el('span', 'done-mark', load('copied:' + key) ? '✓ copied' : '');
+        var doneMark = el('span', 'done-mark', '');
         sum.appendChild(doneMark); det.appendChild(sum);
         var wrap = el('div', 'starter');
         wrap.appendChild(el('div', 'starter-title', st.title));
@@ -493,8 +500,10 @@ summary .done-mark { color: var(--ok); margin-left: 8px; font-weight: 500; }
         });
         wrap.appendChild(ta);
         var act = el('div', 'actions'); act.appendChild(el('span', 'to', 'Paste into a new session in ' + data.projectFolder + ', named ' + st.title));
-        var btn = copyButton(key, 'Copy starter prompt ' + st.title);
-        btn.addEventListener('click', function () { copyText(st.title + '\n\n' + ta.value.trim(), btn, key, function () { doneMark.textContent = '✓ copied'; }); });
+        function payload() { return st.title + '\n\n' + ta.value.trim(); }
+        var btn = copyButton(key, 'Copy starter prompt ' + st.title, payload);
+        if (btn.classList.contains('was')) doneMark.textContent = '✓ copied';
+        btn.addEventListener('click', function () { copyText(payload(), btn, key, function () { doneMark.textContent = '✓ copied'; }); });
         act.appendChild(btn); wrap.appendChild(act); det.appendChild(wrap); li.appendChild(det);
       }
       ul.appendChild(li);

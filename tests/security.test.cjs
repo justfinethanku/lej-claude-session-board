@@ -155,3 +155,42 @@ test('builder refuses missing data blocks before changing the output', t => {
   assert.match(built.stderr, /exactly one script/);
   assert.equal(fs.readFileSync(output, 'utf8'), 'existing board');
 });
+
+test('failed standalone publication preserves the previous board across identities', { skip: process.platform !== 'linux' }, t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'board-rollback-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const output = path.join(dir, 'board.html'), input = path.join(dir, 'new-board.json');
+  const existing = '<h1>Previous board identity and data</h1>';
+  fs.writeFileSync(output, existing);
+  fs.chmodSync(output, 0o640);
+  fs.writeFileSync(input, '{invalid json');
+  const args = ['scripts/build_local.py', 'assets/board-template.html', output, '--data', input];
+  const invalid = spawnSync('python3', args, { cwd: root, encoding: 'utf8' });
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stderr, /JSONDecodeError/);
+  assert.equal(fs.readFileSync(output, 'utf8'), existing);
+  const replacement = { ...data(), boardId: 'replacement-board' };
+  fs.writeFileSync(input, JSON.stringify(replacement));
+  // An OS-enforced file-size limit makes a real partial write fail, without
+  // mocking the builder's implementation or filling the host filesystem.
+  const script = 'import resource,runpy,signal,sys; ' +
+    'resource.setrlimit(resource.RLIMIT_FSIZE,(256,256)); ' +
+    'signal.signal(signal.SIGXFSZ,signal.SIG_IGN); ' +
+    'sys.argv=["scripts/build_local.py",*sys.argv[1:]]; ' +
+    'runpy.run_path(sys.argv[0],run_name="__main__")';
+  const built = spawnSync('python3', ['-c', script, 'assets/board-template.html', output, '--data', input], {
+    cwd: root, encoding: 'utf8'
+  });
+  assert.notEqual(built.status, 0);
+  assert.match(built.stderr, /File too large/);
+  assert.equal(fs.readFileSync(output, 'utf8'), existing);
+  assert.equal(fs.statSync(output).mode & 0o777, 0o640);
+  assert.deepEqual(fs.readdirSync(dir).sort(), ['board.html', 'new-board.json']);
+  const retried = spawnSync('python3', args, { cwd: root, encoding: 'utf8' });
+  assert.equal(retried.status, 0, retried.stderr);
+  const page = close(t, open(fs.readFileSync(output, 'utf8')));
+  assert.deepEqual(page.errors, []);
+  assert.deepEqual(JSON.parse(page.document.getElementById('board-data').textContent), replacement);
+  assert.equal(fs.statSync(output).mode & 0o777, 0o640);
+  assert.deepEqual(fs.readdirSync(dir).sort(), ['board.html', 'new-board.json']);
+});
